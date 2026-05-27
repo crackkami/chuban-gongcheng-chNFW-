@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/kami-energy-dashboard
+  GHCR_IMAGE: ghcr.io/espkami/chuban-gongcheng
 
 jobs:
   build-and-push:

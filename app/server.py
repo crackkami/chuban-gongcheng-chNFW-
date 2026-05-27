@@ -7,7 +7,8 @@ from datetime import datetime as dt, timedelta as td
 app = Flask(__name__)
 CORS(app)
 
-DB = os.environ.get('DB_PATH', '/data/dashboard.db')
+DB         = os.environ.get('DB_PATH',    '/data/dashboard.db')
+HTML_FILE  = os.environ.get('HTML_FILE',  os.path.join(os.path.dirname(os.path.abspath(__file__)), 'index.html'))
 
 CITY_MAP = {
     "深圳":"Shenzhen","广州":"Guangzhou","北京":"Beijing","上海":"Shanghai",
@@ -27,6 +28,9 @@ def get_db():
     return conn
 
 def init_db():
+    _admin_user = os.environ.get('ADMIN_USERNAME', 'admin')
+    _admin_pw   = os.environ.get('ADMIN_PASSWORD', 'kami2024')
+
     os.makedirs(os.path.dirname(DB), exist_ok=True)
     conn = get_db()
     conn.executescript("""
@@ -76,9 +80,10 @@ def init_db():
     INSERT OR IGNORE INTO settings VALUES("city","深圳");
     INSERT OR IGNORE INTO settings VALUES("city_lat","22.5431");
     INSERT OR IGNORE INTO settings VALUES("city_lon","114.0579");
-    INSERT OR IGNORE INTO settings VALUES("admin_password","kami2024");
-    INSERT OR IGNORE INTO users(username,password,role,permissions) VALUES("admin","kami2024","superadmin",'{"energy":true,"ac_log":true,"boiler_log":true,"users":true,"export":true,"settings":true}');
     """)
+    conn.execute("INSERT OR IGNORE INTO settings VALUES(?,?)", ("admin_password", _admin_pw))
+    conn.execute("INSERT OR IGNORE INTO users(username,password,role,permissions) VALUES(?,?,?,?)",
+        (_admin_user, _admin_pw, "superadmin", '{"energy":true,"ac_log":true,"boiler_log":true,"users":true,"export":true,"settings":true}'))
     # 兼容旧库
     for col_sql in [
         "ALTER TABLE boiler_logs ADD COLUMN device TEXT NOT NULL DEFAULT '5楼平台锅炉'",
@@ -148,7 +153,7 @@ def fetch_wx(city_en):
 
 @app.route("/")
 def index():
-    r = make_response(send_file("/app/index.html"))
+    r = make_response(send_file(HTML_FILE))
     r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return r
 

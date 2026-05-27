@@ -2,23 +2,17 @@ version: "3.9"
 
 services:
   energy-dashboard:
-    image: ghcr.io/${GITHUB_USERNAME:-your-username}/kami-energy-dashboard:latest
-    # 如需本地构建，注释上面 image 行，取消注释下面两行：
-    # build: .
+    image: ghcr.io/espkami/chuban-gongcheng:latest
     container_name: kami-energy-dashboard
     restart: unless-stopped
     ports:
-      - "${PORT:-5000}:5000"
+      - "5000:5000"    # 修改左边数字可更换访问端口，例如 "8080:5000"
     volumes:
       - energy_data:/data
     environment:
       - DB_PATH=/data/dashboard.db
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      - ADMIN_USERNAME=admin       # 后台登录账号
+      - ADMIN_PASSWORD=kami2024    # 后台登录密码（首次部署请修改）
 
 volumes:
   energy_data:

@@ -12,7 +12,7 @@ docker run -d \
   --restart unless-stopped \
   -p 5000:5000 \
   -v energy_data:/data \
-  ghcr.io/your-username/kami-energy-dashboard:latest
+  ghcr.io/espkami/chuban-gongcheng:latest
 ```
 
 访问 http://localhost:5000 即可使用。
@@ -23,7 +23,7 @@ docker run -d \
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/your-username/kami-energy-dashboard.git
+git clone https://github.com/espkami/chuban-gongcheng.git
 cd kami-energy-dashboard
 
 # 2. 配置（可选）
@@ -102,8 +102,8 @@ git push origin v1.0.0
 ```
 
 构建完成后镜像地址：
-- GHCR: `ghcr.io/your-username/kami-energy-dashboard:v1.0.0`
-- Docker Hub: `your-username/kami-energy-dashboard:v1.0.0`
+- GHCR: `ghcr.io/espkami/chuban-gongcheng:v1.0.0`
+- Docker Hub: `espkami/chuban-gongcheng:v1.0.0`
 
 ---
 
