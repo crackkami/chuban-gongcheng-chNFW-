@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>工程部能耗管理系统</title>
+<title>浙江出版物资大厦能耗管理系统</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -52,8 +52,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .mcard-val{font-size:24px;font-weight:300;font-family:var(--mono);color:var(--text)}
 .mcard-unit{font-size:11px;color:var(--text3);margin-top:2px}
 /* Weather */
-.hourly{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
-.hi{flex:0 0 50px;text-align:center;padding:8px 4px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)}
+.hourly{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.hourly::-webkit-scrollbar{height:4px}
+.hourly::-webkit-scrollbar-track{background:var(--bg3);border-radius:2px}
+.hourly::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.hourly::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.hi{flex:0 0 calc(12.5% - 6px);min-width:44px;scroll-snap-align:start;text-align:center;padding:8px 4px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)}
 .hi-time{font-size:10px;color:var(--text2)}
 .hi-temp{font-size:14px;font-weight:500;font-family:var(--mono);margin-top:3px}
 .hi-icon{font-size:16px;margin-top:2px}
@@ -154,8 +158,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   /* 模态框全宽 */
   .modal-wrap .modal { width: 96vw; max-width: 96vw; padding: 16px; }
 
-  /* 系统设置双列改单列 */
-  #admin-settings > div[style*="grid-template-columns:1fr 1fr"] {
+  /* 系统设置三列改单列 */
+  #admin-settings > div[style*="grid-template-columns"] {
     grid-template-columns: 1fr !important;
   }
 
@@ -234,7 +238,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     <div style="width:100%;max-width:360px;padding:0 20px">
       <div style="text-align:center;margin-bottom:32px">
         <div style="width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);margin:0 auto 14px"></div>
-        <h1 style="font-size:20px;font-weight:500">工程部能耗管理系统</h1>
+        <h1 style="font-size:20px;font-weight:500">浙江出版物资大厦能耗管理系统</h1>
         <p style="font-size:12px;color:var(--text2);margin-top:6px">后台管理登录</p>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px">
@@ -253,7 +257,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   <div class="topbar">
     <div class="topbar-logo">
       <div class="dot"></div>
-      <h1>工程部能耗管理系统</h1>
+      <h1>浙江出版物资大厦能耗管理系统</h1>
     </div>
     <div class="topbar-right">
       <span class="clock" id="clk-front"></span>
@@ -564,10 +568,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 
     <div id="admin-settings" style="display:none">
 
-      <!-- 两列网格布局 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+      <!-- 三列网格布局 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:14px;align-items:start">
 
-        <!-- 左列 -->
+        <!-- 左列：天气 + 修改密码 -->
         <div>
           <!-- 天气地点配置 -->
           <div class="card">
@@ -596,6 +600,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
             <div id="wx-test-result" style="margin-top:10px;font-size:12px;color:var(--text2)"></div>
           </div>
 
+          <!-- 修改密码 + 退出 -->
+          <div class="card">
+            <div class="card-hd"><span class="card-title"><span class="icon" style="background:var(--red)"></span>修改我的密码</span></div>
+            <div class="fg"><label>原密码</label><input type="password" id="chg-old" placeholder="当前密码"></div>
+            <div class="fg"><label>新密码</label><input type="password" id="chg-new" placeholder="至少4位"></div>
+            <div id="chg-msg" style="font-size:12px;min-height:18px;margin-bottom:10px;color:var(--danger)"></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-accent" onclick="changeMyPassword()">修改密码</button>
+              <button class="btn btn-danger" onclick="doLogout()">退出登录</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 中列：操作员 + 数据管理 -->
+        <div>
           <!-- 操作员管理 -->
           <div class="card">
             <div class="card-hd">
@@ -613,20 +632,69 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
             </div>
           </div>
 
-          <!-- 修改密码 + 退出 -->
+          <!-- 数据管理 -->
           <div class="card">
-            <div class="card-hd"><span class="card-title"><span class="icon" style="background:var(--red)"></span>修改我的密码</span></div>
-            <div class="fg"><label>原密码</label><input type="password" id="chg-old" placeholder="当前密码"></div>
-            <div class="fg"><label>新密码</label><input type="password" id="chg-new" placeholder="至少4位"></div>
-            <div id="chg-msg" style="font-size:12px;min-height:18px;margin-bottom:10px;color:var(--danger)"></div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-accent" onclick="changeMyPassword()">修改密码</button>
-              <button class="btn btn-danger" onclick="doLogout()">退出登录</button>
+            <div class="card-hd">
+              <span class="card-title"><span class="icon" style="background:var(--warn)"></span>数据管理</span>
+            </div>
+
+            <!-- 导出 -->
+            <div style="margin-bottom:14px">
+              <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">导出备份</div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.6">导出能耗、开关记录、交接班为 JSON 文件</div>
+              <button class="btn btn-blue" onclick="dataExport()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                导出备份
+              </button>
+            </div>
+
+            <div style="height:1px;background:var(--border);margin-bottom:14px"></div>
+
+            <!-- 导入 -->
+            <div style="margin-bottom:14px">
+              <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">导入数据</div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.6">从备份文件恢复（追加，不覆盖已有记录）</div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <label class="btn" style="cursor:pointer;font-size:12px">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  选择文件
+                  <input type="file" id="import-file" accept=".json" style="display:none" onchange="dataImportPreview(this)">
+                </label>
+                <span id="import-filename" style="font-size:11px;color:var(--text2)">未选择文件</span>
+              </div>
+              <div id="import-preview" style="display:none;margin-top:8px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);font-size:11px;color:var(--text2);line-height:1.8"></div>
+              <button id="import-btn" class="btn btn-accent" style="display:none;margin-top:8px;font-size:12px" onclick="dataImportConfirm()">确认导入</button>
+            </div>
+
+            <div style="height:1px;background:var(--border);margin-bottom:14px"></div>
+
+            <!-- 清空 -->
+            <div>
+              <div style="font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">清空数据</div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.6">⚠️ 操作不可恢复，请谨慎</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
+                <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)">
+                  <input type="checkbox" id="clr-energy"> 能耗记录
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)">
+                  <input type="checkbox" id="clr-ac"> 空调开关
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)">
+                  <input type="checkbox" id="clr-boiler"> 锅炉开关
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;padding:6px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)">
+                  <input type="checkbox" id="clr-notes"> 交接班记录
+                </label>
+              </div>
+              <button class="btn btn-danger" style="font-size:12px" onclick="dataClear()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                清空所选数据
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- 右列：账号管理（内容多，独占右列） -->
+        <!-- 右列：账号管理 -->
         <div>
           <div class="card">
             <div class="card-hd">
@@ -1515,6 +1583,124 @@ async function delD1K(id) {
 }
 
 // ── Settings ─────────────────────────────────────────────
+
+// ── 数据管理：导出 / 导入 / 清空 ────────────────────────
+function dataExport() {
+  window.open(API + '/data/export', '_blank');
+}
+
+var _importPayload = null;
+function dataImportPreview(input) {
+  _importPayload = null;
+  var btn = document.getElementById('import-btn');
+  var preview = document.getElementById('import-preview');
+  var fname = document.getElementById('import-filename');
+  btn.style.display = 'none';
+  preview.style.display = 'none';
+
+  var file = input.files[0];
+  if (!file) { fname.textContent = '未选择文件'; return; }
+  fname.textContent = file.name;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (data.version !== 1) { toast('不支持的备份版本', 'err'); return; }
+      _importPayload = data;
+      preview.style.display = 'block';
+      preview.innerHTML =
+        '<strong>备份时间：</strong>' + (data.exported_at || '未知') + '<br>' +
+        '<strong>能耗记录：</strong>' + (data.energy_entries||[]).length + ' 条<br>' +
+        '<strong>空调开关：</strong>' + (data.ac_logs||[]).length + ' 条<br>' +
+        '<strong>锅炉开关：</strong>' + (data.boiler_logs||[]).length + ' 条<br>' +
+        '<strong>交接班记录：</strong>' + (data.daily_notes||[]).length + ' 条';
+      btn.style.display = 'inline-flex';
+    } catch(ex) {
+      toast('文件解析失败，请确认是有效的备份文件', 'err');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function dataImportConfirm() {
+  if (!_importPayload) return;
+  if (!confirm('确认导入备份数据？追加模式导入，已有记录不会被覆盖。')) return;
+  var btn = document.getElementById('import-btn');
+  btn.disabled = true; btn.textContent = '导入中...';
+  try {
+    var r = await fetch(API + '/data/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_importPayload)
+    });
+    var res = await r.json();
+    if (res.ok) {
+      var imp = res.imported;
+      toast('导入成功！能耗:' + imp.energy_entries + ' 空调:' + imp.ac_logs +
+            ' 锅炉:' + imp.boiler_logs + ' 交接班:' + imp.daily_notes);
+      _importPayload = null;
+      document.getElementById('import-file').value = '';
+      document.getElementById('import-filename').textContent = '未选择文件';
+      document.getElementById('import-preview').style.display = 'none';
+      btn.style.display = 'none';
+      renderAdminTables();
+    } else {
+      toast(res.error || '导入失败', 'err');
+    }
+  } catch(ex) {
+    toast('网络错误', 'err');
+  }
+  btn.disabled = false; btn.textContent = '确认导入';
+}
+
+async function dataClear() {
+  var tables = [];
+  if (document.getElementById('clr-energy').checked)  tables.push('energy_entries');
+  if (document.getElementById('clr-ac').checked)       tables.push('ac_logs');
+  if (document.getElementById('clr-boiler').checked)   tables.push('boiler_logs');
+  if (document.getElementById('clr-notes').checked)    tables.push('daily_notes');
+
+  if (!tables.length) { toast('请先勾选要清空的数据表', 'err'); return; }
+
+  var names = {
+    energy_entries: '能耗记录',
+    ac_logs: '空调开关记录',
+    boiler_logs: '锅炉开关记录',
+    daily_notes: '交接班记录'
+  };
+  var tableNames = tables.map(function(t){ return names[t]; }).join('、');
+
+  // 第一次确认
+  if (!confirm('即将清空：' + tableNames + '\n\n此操作不可恢复！确认继续？')) return;
+  // 第二次确认
+  if (!confirm('⚠️ 最终确认\n\n清空后数据将永久删除，无法找回。\n\n确定清空 ' + tableNames + ' 吗？')) return;
+
+  try {
+    var r = await fetch(API + '/data/clear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tables: tables })
+    });
+    var res = await r.json();
+    if (res.ok) {
+      var msg = Object.entries(res.cleared).map(function(kv){
+        return names[kv[0]] + ' 已清空 ' + kv[1] + ' 条';
+      }).join('，');
+      toast(msg);
+      // 取消所有勾选
+      ['clr-energy','clr-ac','clr-boiler','clr-notes'].forEach(function(id){
+        document.getElementById(id).checked = false;
+      });
+      renderAdminTables();
+    } else {
+      toast(res.error || '清空失败', 'err');
+    }
+  } catch(ex) {
+    toast('网络错误', 'err');
+  }
+}
+
 async function loadSettings() {
   var r = await fetch(API + '/settings');
   var s = await r.json();

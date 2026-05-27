@@ -645,6 +645,140 @@ def export_csv():
         headers={"Content-Disposition": f"attachment;filename={fname}"})
 
 
+# ══════════════════════════════════════════════════════════
+# 数据导出 / 导入 / 清空
+# ══════════════════════════════════════════════════════════
+
+@app.route("/api/data/export")
+def data_export():
+    """导出所有业务数据为 JSON"""
+    conn = get_db()
+    def rows(table):
+        return [dict(r) for r in conn.execute(f"SELECT * FROM {table} ORDER BY id").fetchall()]
+    payload = {
+        "version": 1,
+        "exported_at": dt.now().isoformat(),
+        "energy_entries": rows("energy_entries"),
+        "ac_logs":        rows("ac_logs"),
+        "boiler_logs":    rows("boiler_logs"),
+        "daily_notes":    rows("daily_notes"),
+    }
+    conn.close()
+    import json as _json
+    data = _json.dumps(payload, ensure_ascii=False, indent=2)
+    fname = f"kami_energy_backup_{dt.now().strftime('%Y%m%d_%H%M%S')}.json"
+    return Response(data, mimetype="application/json",
+        headers={"Content-Disposition": f"attachment;filename={fname}"})
+
+
+@app.route("/api/data/import", methods=["POST"])
+def data_import():
+    """导入业务数据（追加模式，不覆盖已有记录）"""
+    import json as _json
+    try:
+        payload = _json.loads(request.data)
+    except Exception:
+        return jsonify({"error": "JSON 格式错误"}), 400
+
+    if payload.get("version") != 1:
+        return jsonify({"error": "不支持的备份版本"}), 400
+
+    conn = get_db()
+    stats = {}
+
+    # energy_entries：按 date UNIQUE 冲突忽略
+    entries = payload.get("energy_entries", [])
+    cnt = 0
+    for r in entries:
+        try:
+            conn.execute("""INSERT OR IGNORE INTO energy_entries
+                (date,elec_huanbei_raw,elec_datieguan_raw,dik1_raw,dik2_raw,dik5_raw,
+                 water_raw,gas_raw,elec_huanbei_usage,elec_datieguan_usage,
+                 dik1_usage,dik2_usage,dik5_usage,elec_usage,water_usage,gas_usage,
+                 ac_hours,notes,operator,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (r.get("date"), r.get("elec_huanbei_raw"), r.get("elec_datieguan_raw"),
+                 r.get("dik1_raw"), r.get("dik2_raw"), r.get("dik5_raw"),
+                 r.get("water_raw"), r.get("gas_raw"),
+                 r.get("elec_huanbei_usage",0), r.get("elec_datieguan_usage",0),
+                 r.get("dik1_usage",0), r.get("dik2_usage",0), r.get("dik5_usage",0),
+                 r.get("elec_usage",0), r.get("water_usage",0), r.get("gas_usage",0),
+                 r.get("ac_hours",0), r.get("notes",""), r.get("operator",""),
+                 r.get("created_at",""), r.get("updated_at","")))
+            cnt += conn.execute("SELECT changes()").fetchone()[0]
+        except: pass
+    stats["energy_entries"] = cnt
+
+    # ac_logs（用原始 id 去重）
+    cnt = 0
+    for r in payload.get("ac_logs", []):
+        try:
+            rid = r.get("id")
+            exists = rid and conn.execute("SELECT 1 FROM ac_logs WHERE id=?", (rid,)).fetchone()
+            if not exists:
+                conn.execute("INSERT INTO ac_logs(id,date,time,device,status,operator,notes,created_at) VALUES(?,?,?,?,?,?,?,?)",
+                    (rid, r.get("date"), r.get("time"), r.get("device"), r.get("status"),
+                     r.get("operator",""), r.get("notes",""), r.get("created_at","")))
+                cnt += 1
+        except: pass
+    stats["ac_logs"] = cnt
+
+    # boiler_logs（用原始 id 去重）
+    cnt = 0
+    for r in payload.get("boiler_logs", []):
+        try:
+            rid = r.get("id")
+            exists = rid and conn.execute("SELECT 1 FROM boiler_logs WHERE id=?", (rid,)).fetchone()
+            if not exists:
+                conn.execute("INSERT INTO boiler_logs(id,date,time,device,status,operator,notes,created_at) VALUES(?,?,?,?,?,?,?,?)",
+                    (rid, r.get("date"), r.get("time"), r.get("device","5楼平台锅炉"),
+                     r.get("status"), r.get("operator",""), r.get("notes",""), r.get("created_at","")))
+                cnt += 1
+        except: pass
+    stats["boiler_logs"] = cnt
+
+    # daily_notes（用原始 id 去重）
+    cnt = 0
+    for r in payload.get("daily_notes", []):
+        try:
+            rid = r.get("id")
+            exists = rid and conn.execute("SELECT 1 FROM daily_notes WHERE id=?", (rid,)).fetchone()
+            if not exists:
+                conn.execute("INSERT INTO daily_notes(id,date,time,operator,content,created_at) VALUES(?,?,?,?,?,?)",
+                    (rid, r.get("date"), r.get("time"), r.get("operator",""),
+                     r.get("content",""), r.get("created_at","")))
+                cnt += 1
+        except: pass
+    stats["daily_notes"] = cnt
+
+    conn.commit(); conn.close()
+    return jsonify({"ok": True, "imported": stats})
+
+
+@app.route("/api/data/clear", methods=["POST"])
+def data_clear():
+    """清空指定业务数据表（users/settings/operators 不可清空）"""
+    import json as _json
+    d = request.json or {}
+    tables = d.get("tables", [])
+    ALLOWED = {"energy_entries", "ac_logs", "boiler_logs", "daily_notes"}
+    invalid = [t for t in tables if t not in ALLOWED]
+    if invalid:
+        return jsonify({"error": f"不允许清空: {invalid}"}), 400
+    if not tables:
+        return jsonify({"error": "未指定要清空的表"}), 400
+
+    conn = get_db()
+    stats = {}
+    for t in tables:
+        cnt = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+        conn.execute(f"DELETE FROM {t}")
+        conn.execute(f"DELETE FROM sqlite_sequence WHERE name='{t}'")
+        stats[t] = cnt
+    conn.commit(); conn.close()
+    return jsonify({"ok": True, "cleared": stats})
+
+
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000, debug=False)
