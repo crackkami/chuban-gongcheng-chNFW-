@@ -44,7 +44,7 @@ def init_db():
         dik1_usage REAL DEFAULT 0, dik2_usage REAL DEFAULT 0, dik5_usage REAL DEFAULT 0,
         elec_usage REAL DEFAULT 0,
         water_usage REAL DEFAULT 0, gas_usage REAL DEFAULT 0,
-        ac_hours REAL DEFAULT 0, notes TEXT,
+        ac_hours REAL DEFAULT 0, notes TEXT, operator TEXT DEFAULT "",
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
@@ -64,6 +64,14 @@ def init_db():
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+    CREATE TABLE IF NOT EXISTS daily_notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL,
+        operator TEXT DEFAULT "",
+        content TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS operators (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE NOT NULL,
@@ -87,6 +95,7 @@ def init_db():
     # 兼容旧库
     for col_sql in [
         "ALTER TABLE boiler_logs ADD COLUMN device TEXT NOT NULL DEFAULT '5楼平台锅炉'",
+        "ALTER TABLE energy_entries ADD COLUMN operator TEXT DEFAULT ''",
         "ALTER TABLE energy_entries ADD COLUMN elec_huanbei_raw REAL",
         "ALTER TABLE energy_entries ADD COLUMN elec_datieguan_raw REAL",
         "ALTER TABLE energy_entries ADD COLUMN dik1_raw REAL",
@@ -189,6 +198,39 @@ def weather():
     except Exception as e:
         return jsonify({"error":str(e)}), 502
 
+@app.route("/api/notes")
+def get_notes():
+    s = request.args.get("start",""); e = request.args.get("end","")
+    conn = get_db(); q = "SELECT * FROM daily_notes WHERE 1=1"; p = []
+    if s: q += " AND date>=?"; p.append(s)
+    if e: q += " AND date<=?"; p.append(e)
+    rows = conn.execute(q + " ORDER BY date DESC, time DESC", p).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/api/notes", methods=["POST"])
+def add_note():
+    d = request.json or {}
+    content = (d.get("content") or "").strip()
+    if not content: return jsonify({"error":"备注内容不能为空"}), 400
+    date = d.get("date") or dt.now().strftime("%Y-%m-%d")
+    time_ = d.get("time") or dt.now().strftime("%H:%M")
+    operator = d.get("operator","")
+    conn = get_db()
+    conn.execute("INSERT INTO daily_notes(date,time,operator,content) VALUES(?,?,?,?)",
+        (date, time_, operator, content))
+    conn.commit()
+    nid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    return jsonify({"ok":True,"id":nid})
+
+@app.route("/api/notes/<int:nid>", methods=["DELETE"])
+def del_note(nid):
+    conn = get_db()
+    conn.execute("DELETE FROM daily_notes WHERE id=?", (nid,))
+    conn.commit(); conn.close()
+    return jsonify({"ok":True})
+
 @app.route("/api/operators")
 def get_operators():
     conn = get_db()
@@ -257,8 +299,10 @@ def save_entry():
         # 仅更新 ac_hours（空调/锅炉开关刚录入时触发）
         if existing:
             ac_h = calc_ac_hours(conn, date)
-            conn.execute("UPDATE energy_entries SET ac_hours=?,updated_at=? WHERE date=?",
-                (ac_h, dt.now().isoformat(), date))
+            _notes = d.get("notes", existing["notes"] or "") or ""
+            _op    = d.get("operator", existing["operator"] or "") or ""
+            conn.execute("UPDATE energy_entries SET ac_hours=?,notes=?,operator=?,updated_at=? WHERE date=?",
+                (ac_h, _notes, _op, dt.now().isoformat(), date))
             conn.commit()
         conn.close(); return jsonify({"ok":True})
 
@@ -278,13 +322,14 @@ def save_entry():
     wat_u = calc_usage(wat, prev_val("water_raw"))
     gas_u = calc_usage(gas, prev_val("gas_raw"))
     ac_h  = calc_ac_hours(conn, date)
-    notes = d.get("notes", existing["notes"] if existing else "") or ""
+    notes    = d.get("notes",    existing["notes"]    if existing else "") or ""
+    operator = d.get("operator", existing["operator"] if existing else "") or ""
 
     conn.execute("""INSERT INTO energy_entries(date,elec_huanbei_raw,elec_datieguan_raw,
         dik1_raw,dik2_raw,dik5_raw,water_raw,gas_raw,
         elec_huanbei_usage,elec_datieguan_usage,dik1_usage,dik2_usage,dik5_usage,
-        elec_usage,water_usage,gas_usage,ac_hours,notes,updated_at)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        elec_usage,water_usage,gas_usage,ac_hours,notes,operator,updated_at)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(date) DO UPDATE SET
         elec_huanbei_raw=excluded.elec_huanbei_raw,elec_datieguan_raw=excluded.elec_datieguan_raw,
         dik1_raw=excluded.dik1_raw,dik2_raw=excluded.dik2_raw,dik5_raw=excluded.dik5_raw,
@@ -292,9 +337,9 @@ def save_entry():
         elec_huanbei_usage=excluded.elec_huanbei_usage,elec_datieguan_usage=excluded.elec_datieguan_usage,
         dik1_usage=excluded.dik1_usage,dik2_usage=excluded.dik2_usage,dik5_usage=excluded.dik5_usage,
         elec_usage=excluded.elec_usage,water_usage=excluded.water_usage,gas_usage=excluded.gas_usage,
-        ac_hours=excluded.ac_hours,notes=excluded.notes,updated_at=excluded.updated_at""",
+        ac_hours=excluded.ac_hours,notes=excluded.notes,operator=excluded.operator,updated_at=excluded.updated_at""",
         (date,hb,dtg,dk1,dk2,dk5,wat,gas,hb_u,dtg_u,dk1_u,dk2_u,dk5_u,
-         round((hb_u or 0)+(dtg_u or 0),2),wat_u,gas_u,ac_h,notes,dt.now().isoformat()))
+         round((hb_u or 0)+(dtg_u or 0),2),wat_u,gas_u,ac_h,notes,operator,dt.now().isoformat()))
     conn.commit(); conn.close(); return jsonify({"ok":True})
 
 @app.route("/api/entries/<int:eid>", methods=["PUT"])

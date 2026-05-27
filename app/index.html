@@ -115,6 +115,112 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:22px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
 .modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
 .modal-hd h2{font-size:15px;font-weight:500}
+
+/* ── 手机自适应 ──────────────────────────────── */
+@media (max-width: 640px) {
+  .content { padding: 10px !important; }
+  .topbar { padding: 0 12px; }
+  .topbar-logo h1 { font-size: 13px; }
+  .clock { display: none; }
+
+  /* 前台两列改单列 */
+  .g2, .g3, .g4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 能耗汇总卡片内的 2×2 保持两列 */
+  .g2.metrics-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* 图表高度压缩 */
+  #energyChart, #multiChart { height: 140px !important; }
+  #swChart { height: 140px !important; }
+
+  /* 抽屉全屏 */
+  .drawer { max-height: 95vh; border-radius: 16px 16px 0 0; padding: 16px; }
+
+  /* 表格横向滚动 */
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* 后台 subtabs 可横向滚动 */
+  .subtabs { overflow-x: auto; white-space: nowrap; padding: 0 10px; }
+  .subtab  { padding: 10px 12px; font-size: 11px; }
+
+  /* 按钮组换行 */
+  .topbar-right { gap: 5px; }
+  .topbar-right .btn { padding: 6px 9px; font-size: 11px; }
+
+  /* 模态框全宽 */
+  .modal-wrap .modal { width: 96vw; max-width: 96vw; padding: 16px; }
+
+  /* 系统设置双列改单列 */
+  #admin-settings > div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* fg-row2/row3 改单列 */
+  .fg-row2, .fg-row3 { grid-template-columns: 1fr !important; }
+
+  /* 录入区域 operator + date 改单列 */
+  .fg-row2.date-op-row { grid-template-columns: 1fr !important; }
+
+  /* 卡片内边距缩小 */
+  .card { padding: 12px; }
+  .mcard { padding: 10px; }
+  .mcard-val { font-size: 20px !important; }
+}
+
+/* 交接班记录按钮 */
+.btn-handover {
+  background: linear-gradient(135deg, rgba(167,139,250,.15), rgba(167,139,250,.08));
+  border-color: rgba(167,139,250,.4);
+  color: var(--purple);
+}
+.btn-handover:hover { background: rgba(167,139,250,.25); border-color: var(--purple); }
+
+/* 交接班内容卡片 */
+.handover-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 20px;
+  margin-bottom: 12px;
+}
+.handover-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.handover-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--purple), #6d28d9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+.handover-body {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.handover-empty {
+  text-align: center;
+  padding: 48px 0;
+  color: var(--text3);
+  font-size: 13px;
+}
 </style>
 </head>
 <body>
@@ -151,6 +257,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     </div>
     <div class="topbar-right">
       <span class="clock" id="clk-front"></span>
+      <button class="btn btn-handover" id="btn-handover" onclick="openHandover()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        交接班记录
+      </button>
       <button class="btn btn-accent" onclick="openDrawer()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         录入数据
@@ -189,7 +299,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
         <div class="card-hd"><span class="card-title"><span class="icon" style="background:var(--accent)"></span>本月能耗汇总</span></div>
 
         <!-- 主要指标 2×2 -->
-        <div class="g2" style="gap:8px;margin-bottom:8px">
+        <div class="g2 metrics-grid" style="gap:8px;margin-bottom:8px">
           <div class="mcard"><div class="mcard-label">总用电量</div><div class="mcard-val" id="m-elec">—</div><div class="mcard-unit">kWh</div></div>
           <div class="mcard"><div class="mcard-label">空调系统用电</div><div class="mcard-val" id="m-dik-total">—</div><div class="mcard-unit">kWh</div></div>
           <div class="mcard"><div class="mcard-label">总用水量</div><div class="mcard-val" id="m-water">—</div><div class="mcard-unit">m³</div></div>
@@ -304,6 +414,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     <div class="subtab active" id="atab-energy" onclick="adminTab('energy')">能耗记录</div>
     <div class="subtab" id="atab-d1k" onclick="adminTab('d1k')">空调开关记录</div>
     <div class="subtab" id="atab-boiler" onclick="adminTab('boiler')">锅炉开关记录</div>
+    <div class="subtab" id="atab-notes" onclick="adminTab('notes')">交接班记录</div>
     <div class="subtab" id="atab-export" onclick="adminTab('export')">月度报表导出</div>
     <div class="subtab" id="atab-settings" onclick="adminTab('settings')">系统设置</div>
   </div>
@@ -314,9 +425,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       <div class="card">
         <div class="card-hd">
           <span class="card-title"><span class="icon" style="background:var(--green)"></span>能耗录入记录</span>
-          <span style="font-size:11px;color:var(--text2)" id="energy-count"></span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text2)" id="energy-count"></span>
+            <button class="btn btn-sm" onclick="renderAdminTables()" title="刷新">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              刷新
+            </button>
+          </div>
         </div>
-        <div style="overflow-x:auto">
+        <div class="tbl-wrap" style="overflow-x:auto">
           <table class="tbl">
             <thead><tr><th>日期</th><th>用电(kWh)</th><th>用水(m³)</th><th>用气(m³)</th><th>环北线读数</th><th>打铁关线读数</th><th>水表读数</th><th>气表读数</th><th>操作</th></tr></thead>
             <tbody id="energy-tbody"><tr><td colspan="10" class="loading">加载中...</td></tr></tbody>
@@ -330,11 +447,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       <div class="card">
         <div class="card-hd">
           <span class="card-title"><span class="icon" style="background:var(--purple)"></span>空调开关记录</span>
-          <span style="font-size:11px;color:var(--text2)" id="d1k-count"></span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text2)" id="d1k-count"></span>
+            <button class="btn btn-sm" onclick="renderAdminTables()" title="刷新">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              刷新
+            </button>
+          </div>
         </div>
         <div style="overflow-x:auto">
           <table class="tbl">
-            <thead><tr><th>日期</th><th>时间</th><th>设备</th><th>状态</th><th>操作人</th><th>备注</th><th>操作</th></tr></thead>
+            <thead><tr><th>日期</th><th>时间</th><th>设备</th><th>状态</th><th>操作人</th><th>操作</th></tr></thead>
             <tbody id="d1k-tbody"><tr><td colspan="7" class="loading">加载中...</td></tr></tbody>
           </table>
         </div>
@@ -346,17 +469,45 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       <div class="card">
         <div class="card-hd">
           <span class="card-title"><span class="icon" style="background:var(--amber)"></span>锅炉开关记录</span>
-          <span style="font-size:11px;color:var(--text2)" id="boiler-count"></span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text2)" id="boiler-count"></span>
+            <button class="btn btn-sm" onclick="loadBoilerTable()" title="刷新">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              刷新
+            </button>
+          </div>
         </div>
         <div style="overflow-x:auto">
           <table class="tbl">
-            <thead><tr><th>日期</th><th>时间</th><th>设备</th><th>状态</th><th>操作人</th><th>备注</th><th>操作</th></tr></thead>
+            <thead><tr><th>日期</th><th>时间</th><th>设备</th><th>状态</th><th>操作人</th><th>操作</th></tr></thead>
             <tbody id="boiler-tbody"><tr><td colspan="7" class="loading">加载中...</td></tr></tbody>
           </table>
         </div>
       </div>
     </div>
 
+
+    <!-- Notes tab -->
+    <div id="admin-notes" style="display:none">
+      <div class="card">
+        <div class="card-hd">
+          <span class="card-title"><span class="icon" style="background:var(--accent)"></span>交接班记录</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text2)" id="notes-count"></span>
+            <button class="btn btn-sm" onclick="loadNotesTable()" title="刷新">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              刷新
+            </button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>日期/时间</th><th>操作员</th><th>备注内容</th><th>操作</th></tr></thead>
+            <tbody id="notes-tbody"><tr><td colspan="3" class="loading">加载中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
     <!-- Export tab -->
     <div id="admin-export" style="display:none">
@@ -529,6 +680,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 
 </div>
 
+<!-- ═══════════ DRAWER: 交接班记录 ═══════════ -->
+<div class="drawer-overlay" id="handover-drawer">
+  <div class="drawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-hd">
+      <h2 style="display:flex;align-items:center;gap:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--purple);box-shadow:0 0 8px var(--purple);display:inline-block"></span>
+        最新交接班记录
+      </h2>
+      <button class="btn btn-sm" onclick="closeHandover()">关闭</button>
+    </div>
+    <div id="handover-content">
+      <div class="loading" style="padding:40px 0;text-align:center;color:var(--text2)">加载中...</div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ DRAWER: 录入 ═══════════ -->
 <div class="drawer-overlay" id="drawer-main">
   <div class="drawer">
@@ -552,7 +720,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       </div>
     </div>
     <div class="fg" style="margin-top:8px">
-      <label>备注</label>
+      <label>交接班记录</label>
       <textarea id="inp-notes" placeholder="可选备注（如：设备异常、特殊情况说明等）" rows="3" style="width:100%;resize:vertical;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text1);font-size:13px;font-family:inherit;line-height:1.5;box-sizing:border-box;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
     </div>
 
@@ -953,7 +1121,7 @@ async function renderAdminTables() {
 
   var dtb = document.getElementById('d1k-tbody');
   if (!d1kLogs.length) {
-    dtb.innerHTML = '<tr><td colspan="7" class="loading">暂无记录</td></tr>';
+    dtb.innerHTML = '<tr><td colspan="6" class="loading">暂无记录</td></tr>';
   } else {
     dtb.innerHTML = d1kLogs.slice(0, 60).map(function(r) {
       var rdata = JSON.stringify(r).replace(/"/g, '&quot;');
@@ -965,7 +1133,6 @@ async function renderAdminTables() {
         '<td>' + r.device + ' <span style="color:var(--text3);font-size:10px">' + (devLabel[r.device]||'') + '</span></td>' +
         '<td><span class="pill ' + pillCls + '">' + r.status + '</span></td>' +
         '<td>' + (r.operator||'—') + '</td>' +
-        '<td style="color:#8b96a8;font-size:11px">' + (r.notes||'') + '</td>' +
         '<td>' +
           '<button class="btn btn-sm" onclick="editD1K(' + rdata + ')">编辑</button> ' +
           '<button class="btn btn-sm btn-danger" onclick="delD1K(' + r.id + ')">删除</button>' +
@@ -980,7 +1147,7 @@ async function renderAdminTables() {
     if (cnt) cnt.textContent = '共 ' + boilerLogs.length + ' 条';
     var btb = document.getElementById('boiler-tbody');
     if (!btb) return;
-    if (!boilerLogs.length) { btb.innerHTML = '<tr><td colspan="7" class="loading">暂无记录</td></tr>'; return; }
+    if (!boilerLogs.length) { btb.innerHTML = '<tr><td colspan="6" class="loading">暂无记录</td></tr>'; return; }
     btb.innerHTML = boilerLogs.slice(0, 60).map(function(r) {
       var rdata = JSON.stringify(r).replace(/"/g, '&quot;');
       var pillCls = r.status === '开' ? 'pill-on' : 'pill-off';
@@ -990,7 +1157,6 @@ async function renderAdminTables() {
         '<td>' + (r.device||'—') + '</td>' +
         '<td><span class="pill ' + pillCls + '">' + r.status + '</span></td>' +
         '<td>' + (r.operator||'—') + '</td>' +
-        '<td style="color:#8b96a8;font-size:11px">' + (r.notes||'') + '</td>' +
         '<td>' +
           '<button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> ' +
           '<button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button>' +
@@ -1081,6 +1247,41 @@ async function testWeather() {
 }
 
 // ── Drawer ───────────────────────────────────────────────
+async function openHandover() {
+  var el = document.getElementById('handover-drawer');
+  el.classList.add('open');
+  var box = document.getElementById('handover-content');
+  box.innerHTML = '<div class="loading" style="padding:40px 0;text-align:center;color:var(--text2)">加载中...</div>';
+  fetch(API + '/notes?limit=1').then(function(r){ return r.json(); }).then(function(rows) {
+    if (!rows.length) {
+      box.innerHTML = '<div class="handover-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;margin-bottom:12px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><br>暂无交接班记录</div>';
+      return;
+    }
+    var r = rows[0];
+    var op = r.operator || '—';
+    var avatar = op !== '—' ? op.slice(-2) : '记';
+    box.innerHTML =
+      '<div class="handover-card">' +
+        '<div class="handover-meta">' +
+          '<div class="handover-avatar">' + avatar + '</div>' +
+          '<div>' +
+            '<div style="font-size:13px;font-weight:500;color:var(--text)">' + op + '</div>' +
+            '<div style="font-size:11px;color:var(--text3);margin-top:2px">' +
+              '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+              r.date + ' ' + r.time +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="handover-body">' + (r.content || '') + '</div>' +
+      '</div>';
+  }).catch(function() {
+    box.innerHTML = '<div class="handover-empty">加载失败，请重试</div>';
+  });
+}
+function closeHandover() {
+  document.getElementById('handover-drawer').classList.remove('open');
+}
+
 async function openDrawer() {
   document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
   // 每次打开抽屉都从API拉最新操作员列表
@@ -1089,6 +1290,11 @@ async function openDrawer() {
     _operators = await r.json();
   } catch(e) {}
   refreshOperatorSelect();
+  // 每次打开抽屉清空备注和操作员
+  var notesEl = document.getElementById('inp-notes');
+  if (notesEl) notesEl.value = '';
+  var opEl = document.getElementById('inp-operator');
+  if (opEl) opEl.value = '';
   var now = new Date().toTimeString().slice(0,5);
   // 清空输入值
   var ids = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas'];
@@ -1120,15 +1326,11 @@ async function openDrawer() {
       var el = document.getElementById(id);
       if (!el) return;
       el.value = '';
-      if (existing && existingVal != null) {
-        // 今天已有该字段数据：显示为灰色 placeholder（不回填 value）
-        el.placeholder = '上次: ' + existingVal;
-      } else if (prev && prevVal != null) {
-        // 今天没有该字段数据：显示前一天读数作为参考
-        el.placeholder = '上次: ' + prevVal;
-      } else {
-        el.placeholder = '当前累计读数';
-      }
+      // 统一只显示 placeholder 提示，不回填 value
+      var refVal = (existing && existingVal != null) ? existingVal
+                 : (prev && prevVal != null)         ? prevVal
+                 : null;
+      el.placeholder = refVal != null ? '上次: ' + refVal : '当前累计读数';
     }
     setField('inp-elec-hb',  existing && existing.elec_huanbei_raw,  prev && prev.elec_huanbei_raw);
     setField('inp-elec-dtg', existing && existing.elec_datieguan_raw, prev && prev.elec_datieguan_raw);
@@ -1137,10 +1339,7 @@ async function openDrawer() {
     setField('inp-dik5',     existing && existing.dik5_raw,           prev && prev.dik5_raw);
     setField('inp-water',    existing && existing.water_raw,          prev && prev.water_raw);
     setField('inp-gas',      existing && existing.gas_raw,            prev && prev.gas_raw);
-    if (existing && existing.notes) {
-      var notesEl = document.getElementById('inp-notes');
-      if (notesEl && !notesEl.value) notesEl.value = existing.notes;
-    }
+
   }).catch(function(){});
   document.getElementById('drawer-main').classList.add('open');
 }
@@ -1166,7 +1365,7 @@ async function saveAll() {
   var date = document.getElementById('inp-date').value;
   if (!date) { toast('请选择日期', 'err'); return; }
 
-  // 检查是否有任何实际输入：能耗字段、空调开关、锅炉开关
+  // 检查是否有任何实际输入：能耗字段、空调开关、锅炉开关、备注
   var energyInputs = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas'];
   var hasEnergy = energyInputs.some(function(id) {
     var v = document.getElementById(id).value.trim();
@@ -1176,8 +1375,10 @@ async function saveAll() {
   var acHasTime = acVisible && document.getElementById('ac-time').value !== '';
   var boilerVisible = document.getElementById('boiler-entry').style.display !== 'none';
   var boilerHasTime = boilerVisible && document.getElementById('boiler-time').value !== '';
+  var notesVal  = document.getElementById('inp-notes').value.trim();
+  var hasNotes  = notesVal !== '';
 
-  if (!hasEnergy && !acHasTime && !boilerHasTime) {
+  if (!hasEnergy && !acHasTime && !boilerHasTime && !hasNotes) {
     toast('没有任何改动，无需保存', 'err');
     return;
   }
@@ -1213,7 +1414,8 @@ async function saveAll() {
     var v = document.getElementById(id).value.trim();
     return v !== '' && !isNaN(parseFloat(v));
   });
-  if (hasEnergyData) {
+  var hasOperator = document.getElementById('inp-operator').value !== '';
+  if (hasEnergyData || hasNotes || hasOperator) {
     function toRaw(id) {
       var v = document.getElementById(id).value.trim();
       if (v === '' || isNaN(parseFloat(v))) return null;
@@ -1228,9 +1430,20 @@ async function saveAll() {
       dik5_raw: toRaw('inp-dik5'),
       water_raw: toRaw('inp-water'),
       gas_raw: toRaw('inp-gas'),
-      notes: document.getElementById('inp-notes').value
     };
     await fetch(API + '/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  }
+  // 备注单独存入 daily_notes（允许一天多条）
+  if (hasNotes) {
+    var now = new Date();
+    await fetch(API + '/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: date,
+        time: now.toTimeString().slice(0,5),
+        operator: document.getElementById('inp-operator').value,
+        content: notesVal
+      })
+    });
   }
 
   closeDrawer();
@@ -1242,11 +1455,11 @@ async function saveAll() {
   fetch(API + '/boiler').then(function(r){ return r.json(); }).then(function(logs) {
     document.getElementById('boiler-count').textContent = '共 ' + logs.length + ' 条';
     var tb = document.getElementById('boiler-tbody');
-    if (!logs.length) { tb.innerHTML = '<tr><td colspan="7" class="loading">暂无记录</td></tr>'; return; }
+    if (!logs.length) { tb.innerHTML = '<tr><td colspan="6" class="loading">暂无记录</td></tr>'; return; }
     tb.innerHTML = logs.slice(0,60).map(function(r) {
       var rdata = JSON.stringify(r).replace(/"/g,'&quot;');
       var pillCls = r.status === '开' ? 'pill-on' : 'pill-off';
-      return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.time + '</td><td>' + (r.device||'—') + '</td><td><span class="pill ' + pillCls + '">' + r.status + '</span></td><td style="color:#8b96a8;font-size:11px">' + (r.notes||'') + '</td><td><button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button></td></tr>';
+      return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.time + '</td><td>' + (r.device||'—') + '</td><td><span class="pill ' + pillCls + '">' + r.status + '</span></td><td>' + (r.operator||'—') + '</td><td><button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button></td></tr>';
     }).join('');
   });
 }
@@ -1421,11 +1634,12 @@ function goPage(id) {
   if (id === 'pg-front') renderFront();
 }
 function adminTab(t) {
-  ['energy','d1k','boiler','export','settings'].forEach(function(k) {
+  ['energy','d1k','boiler','notes','export','settings'].forEach(function(k) {
     document.getElementById('admin-' + k).style.display = k === t ? 'block' : 'none';
     document.getElementById('atab-' + k).classList.toggle('active', k === t);
   });
   if (t === 'settings') loadSettings();
+  if (t === 'notes') loadNotesTable();
 
   if (t === 'boiler') loadBoilerTable();
 }
@@ -1558,15 +1772,42 @@ function doLogout() {
 }
 
 // ── 锅炉记录 ────────────────────────────────────────────────
+function loadNotesTable() {
+  fetch(API + '/notes').then(function(r){ return r.json(); }).then(function(rows) {
+    var cnt = document.getElementById('notes-count');
+    var tb  = document.getElementById('notes-tbody');
+    if (cnt) cnt.textContent = '共 ' + rows.length + ' 条';
+    if (!tb) return;
+    if (!rows.length) {
+      tb.innerHTML = '<tr><td colspan="4" class="loading">暂无交接班记录</td></tr>';
+      return;
+    }
+    tb.innerHTML = rows.map(function(r) {
+      return '<tr>' +
+        '<td class="mono">' + r.date + ' ' + r.time + '</td>' +
+        '<td style="color:var(--text2)">' + (r.operator||'—') + '</td>' +
+        '<td>' + (r.content||'') + '</td>' +
+        '<td><button class="btn btn-sm btn-danger" onclick="delNote(' + r.id + ')">删除</button></td>' +
+      '</tr>';
+    }).join('');
+  });
+}
+async function delNote(id) {
+  if (!confirm('确认删除该条备注？')) return;
+  await fetch(API + '/notes/' + id, { method: 'DELETE' });
+  loadNotesTable();
+  toast('已删除');
+}
+
 function loadBoilerTable() {
   fetch(API + '/boiler').then(function(r){ return r.json(); }).then(function(logs) {
     document.getElementById('boiler-count').textContent = '共 ' + logs.length + ' 条';
     var tb = document.getElementById('boiler-tbody');
-    if (!logs.length) { tb.innerHTML = '<tr><td colspan="7" class="loading">暂无记录</td></tr>'; return; }
+    if (!logs.length) { tb.innerHTML = '<tr><td colspan="6" class="loading">暂无记录</td></tr>'; return; }
     tb.innerHTML = logs.slice(0,60).map(function(r) {
       var rdata = JSON.stringify(r).replace(/"/g,'&quot;');
       var pillCls = r.status === '开' ? 'pill-on' : 'pill-off';
-      return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.time + '</td><td>' + (r.device||'—') + '</td><td><span class="pill ' + pillCls + '">' + r.status + '</span></td><td style="color:#8b96a8;font-size:11px">' + (r.notes||'') + '</td><td><button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button></td></tr>';
+      return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.time + '</td><td>' + (r.device||'—') + '</td><td><span class="pill ' + pillCls + '">' + r.status + '</span></td><td>' + (r.operator||'—') + '</td><td><button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button></td></tr>';
     }).join('');
   });
 }
