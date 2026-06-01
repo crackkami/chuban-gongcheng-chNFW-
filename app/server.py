@@ -40,6 +40,7 @@ def init_db():
         elec_huanbei_raw REAL, elec_datieguan_raw REAL,
         dik1_raw REAL, dik2_raw REAL, dik5_raw REAL,
         water_raw REAL, gas_raw REAL,
+        hot_water_raw REAL, hot_water_usage REAL DEFAULT 0,
         elec_huanbei_usage REAL DEFAULT 0, elec_datieguan_usage REAL DEFAULT 0,
         dik1_usage REAL DEFAULT 0, dik2_usage REAL DEFAULT 0, dik5_usage REAL DEFAULT 0,
         elec_usage REAL DEFAULT 0,
@@ -96,6 +97,8 @@ def init_db():
     for col_sql in [
         "ALTER TABLE boiler_logs ADD COLUMN device TEXT NOT NULL DEFAULT '5楼平台锅炉'",
         "ALTER TABLE energy_entries ADD COLUMN operator TEXT DEFAULT ''",
+        "ALTER TABLE energy_entries ADD COLUMN hot_water_raw REAL",
+        "ALTER TABLE energy_entries ADD COLUMN hot_water_usage REAL DEFAULT 0",
         "ALTER TABLE energy_entries ADD COLUMN elec_huanbei_raw REAL",
         "ALTER TABLE energy_entries ADD COLUMN elec_datieguan_raw REAL",
         "ALTER TABLE energy_entries ADD COLUMN dik1_raw REAL",
@@ -111,6 +114,36 @@ def init_db():
         except: pass
     conn.commit()
     conn.close()
+
+import secrets as _secrets
+
+def create_session(username, role):
+    token = _secrets.token_hex(32)
+    conn = get_db()
+    expires = (dt.now().replace(year=dt.now().year+1)).isoformat()
+    conn.execute("DELETE FROM sessions WHERE username=?", (username,))
+    conn.execute("INSERT INTO sessions(token,username,expires_at,created_at) VALUES(?,?,?,?)",
+        (token, username, expires, dt.now().isoformat()))
+    conn.commit(); conn.close()
+    return token
+
+def get_session(token):
+    """验证 token，返回包含 role 的 session 信息"""
+    if not token: return None
+    conn = get_db()
+    row = conn.execute(
+        "SELECT s.token, s.username, u.role FROM sessions s "
+        "JOIN users u ON s.username=u.username WHERE s.token=?", (token,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def require_write(req):
+    """校验请求是否有写入权限，viewer 不允许写"""
+    token = req.headers.get("X-Session-Token","")
+    sess = get_session(token)
+    if not sess: return False
+    return sess.get("role") != "viewer"
 
 def calc_usage(cur, prev, mult=1):
     if cur is None or prev is None: return 0
@@ -210,6 +243,7 @@ def get_notes():
 
 @app.route("/api/notes", methods=["POST"])
 def add_note():
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     d = request.json or {}
     content = (d.get("content") or "").strip()
     if not content: return jsonify({"error":"备注内容不能为空"}), 400
@@ -226,6 +260,7 @@ def add_note():
 
 @app.route("/api/notes/<int:nid>", methods=["DELETE"])
 def del_note(nid):
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     conn = get_db()
     conn.execute("DELETE FROM daily_notes WHERE id=?", (nid,))
     conn.commit(); conn.close()
@@ -273,6 +308,7 @@ def get_entries():
 
 @app.route("/api/entries", methods=["POST"])
 def save_entry():
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     d = request.json; date = d.get("date")
     if not date: return jsonify({"error":"日期必填"}), 400
     conn = get_db()
@@ -293,6 +329,7 @@ def save_entry():
     dk5 = pick("dik5_raw")
     wat = pick("water_raw")
     gas = pick("gas_raw")
+    hot = pick("hot_water_raw")
 
     # 全部字段都是 null（新提交+已有都没有）则跳过
     if all(v is None for v in [hb,dtg,dk1,dk2,dk5,wat,gas]):
@@ -321,29 +358,32 @@ def save_entry():
     dk5_u = calc_usage(dk5, prev_val("dik5_raw"),           40)
     wat_u = calc_usage(wat, prev_val("water_raw"))
     gas_u = calc_usage(gas, prev_val("gas_raw"))
+    hot_u = calc_usage(hot, prev_val("hot_water_raw"))
     ac_h  = calc_ac_hours(conn, date)
     notes    = d.get("notes",    existing["notes"]    if existing else "") or ""
     operator = d.get("operator", existing["operator"] if existing else "") or ""
 
     conn.execute("""INSERT INTO energy_entries(date,elec_huanbei_raw,elec_datieguan_raw,
-        dik1_raw,dik2_raw,dik5_raw,water_raw,gas_raw,
+        dik1_raw,dik2_raw,dik5_raw,water_raw,gas_raw,hot_water_raw,
         elec_huanbei_usage,elec_datieguan_usage,dik1_usage,dik2_usage,dik5_usage,
-        elec_usage,water_usage,gas_usage,ac_hours,notes,operator,updated_at)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        elec_usage,water_usage,gas_usage,hot_water_usage,ac_hours,notes,operator,updated_at)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(date) DO UPDATE SET
         elec_huanbei_raw=excluded.elec_huanbei_raw,elec_datieguan_raw=excluded.elec_datieguan_raw,
         dik1_raw=excluded.dik1_raw,dik2_raw=excluded.dik2_raw,dik5_raw=excluded.dik5_raw,
-        water_raw=excluded.water_raw,gas_raw=excluded.gas_raw,
+        water_raw=excluded.water_raw,gas_raw=excluded.gas_raw,hot_water_raw=excluded.hot_water_raw,
         elec_huanbei_usage=excluded.elec_huanbei_usage,elec_datieguan_usage=excluded.elec_datieguan_usage,
         dik1_usage=excluded.dik1_usage,dik2_usage=excluded.dik2_usage,dik5_usage=excluded.dik5_usage,
         elec_usage=excluded.elec_usage,water_usage=excluded.water_usage,gas_usage=excluded.gas_usage,
+        hot_water_usage=excluded.hot_water_usage,
         ac_hours=excluded.ac_hours,notes=excluded.notes,operator=excluded.operator,updated_at=excluded.updated_at""",
-        (date,hb,dtg,dk1,dk2,dk5,wat,gas,hb_u,dtg_u,dk1_u,dk2_u,dk5_u,
-         round((hb_u or 0)+(dtg_u or 0),2),wat_u,gas_u,ac_h,notes,operator,dt.now().isoformat()))
+        (date,hb,dtg,dk1,dk2,dk5,wat,gas,hot,hb_u,dtg_u,dk1_u,dk2_u,dk5_u,
+         round((hb_u or 0)+(dtg_u or 0),2),wat_u,gas_u,hot_u,ac_h,notes,operator,dt.now().isoformat()))
     conn.commit(); conn.close(); return jsonify({"ok":True})
 
 @app.route("/api/entries/<int:eid>", methods=["PUT"])
 def update_entry(eid):
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     d = request.json; conn = get_db()
     row = conn.execute("SELECT * FROM energy_entries WHERE id=?",(eid,)).fetchone()
     if not row: conn.close(); return jsonify({"error":"不存在"}), 404
@@ -372,17 +412,19 @@ def update_entry(eid):
     dk5_u = calc_usage(dk5, prev_val_edit("dik5_raw"),           40)
     wat_u = calc_usage(wat, prev_val_edit("water_raw"))
     gas_u = calc_usage(gas, prev_val_edit("gas_raw"))
+    hot_u = calc_usage(hot, prev_val_edit("hot_water_raw"))
     ac_h  = calc_ac_hours(conn, date)
     conn.execute("""UPDATE energy_entries SET date=?,elec_huanbei_raw=?,elec_datieguan_raw=?,
-        dik1_raw=?,dik2_raw=?,dik5_raw=?,water_raw=?,gas_raw=?,
+        dik1_raw=?,dik2_raw=?,dik5_raw=?,water_raw=?,gas_raw=?,hot_water_raw=?,
         elec_huanbei_usage=?,elec_datieguan_usage=?,dik1_usage=?,dik2_usage=?,dik5_usage=?,
-        elec_usage=?,water_usage=?,gas_usage=?,ac_hours=?,notes=?,updated_at=? WHERE id=?""",
-        (date,hb,dtg,dk1,dk2,dk5,wat,gas,hb_u,dtg_u,dk1_u,dk2_u,dk5_u,
-         round((hb_u or 0)+(dtg_u or 0),2),wat_u,gas_u,ac_h,d.get("notes",row["notes"]),dt.now().isoformat(),eid))
+        elec_usage=?,water_usage=?,gas_usage=?,hot_water_usage=?,ac_hours=?,notes=?,updated_at=? WHERE id=?""",
+        (date,hb,dtg,dk1,dk2,dk5,wat,gas,hot,hb_u,dtg_u,dk1_u,dk2_u,dk5_u,
+         round((hb_u or 0)+(dtg_u or 0),2),wat_u,gas_u,hot_u,ac_h,d.get("notes",row["notes"]),dt.now().isoformat(),eid))
     conn.commit(); conn.close(); return jsonify({"ok":True})
 
 @app.route("/api/entries/<int:eid>", methods=["DELETE"])
 def del_entry(eid):
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     conn = get_db(); conn.execute("DELETE FROM energy_entries WHERE id=?",(eid,))
     conn.commit(); conn.close(); return jsonify({"ok":True})
 
@@ -397,6 +439,7 @@ def get_ac():
 
 @app.route("/api/d1k", methods=["POST"])
 def save_ac():
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     items = request.json
     if not isinstance(items, list): items = [items]
     conn = get_db()
@@ -410,6 +453,7 @@ def save_ac():
 
 @app.route("/api/d1k/<int:lid>", methods=["PUT"])
 def update_ac(lid):
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     d = request.json; conn = get_db()
     old = conn.execute("SELECT date FROM ac_logs WHERE id=?",(lid,)).fetchone()
     conn.execute("UPDATE ac_logs SET date=?,time=?,device=?,status=?,operator=?,notes=? WHERE id=?",
@@ -421,6 +465,7 @@ def update_ac(lid):
 
 @app.route("/api/d1k/<int:lid>", methods=["DELETE"])
 def del_ac(lid):
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     conn = get_db()
     old = conn.execute("SELECT date FROM ac_logs WHERE id=?",(lid,)).fetchone()
     conn.execute("DELETE FROM ac_logs WHERE id=?",(lid,)); conn.commit()
@@ -440,6 +485,7 @@ def get_boiler():
 
 @app.route("/api/boiler", methods=["POST"])
 def save_boiler():
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     it = request.json
     if isinstance(it, list): it = it[0]
     conn = get_db()
@@ -449,6 +495,7 @@ def save_boiler():
 
 @app.route("/api/boiler/<int:lid>", methods=["PUT"])
 def update_boiler(lid):
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     d = request.json; conn = get_db()
     conn.execute("UPDATE boiler_logs SET date=?,time=?,device=?,status=?,operator=?,notes=? WHERE id=?",
         (d["date"],d["time"],d.get("device","5楼平台锅炉"),d["status"],d.get("operator",""),d.get("notes",""),lid))
@@ -456,6 +503,7 @@ def update_boiler(lid):
 
 @app.route("/api/boiler/<int:lid>", methods=["DELETE"])
 def del_boiler(lid):
+    if not require_write(request): return jsonify({"error":"权限不足"}), 403
     conn = get_db(); conn.execute("DELETE FROM boiler_logs WHERE id=?",(lid,))
     conn.commit(); conn.close(); return jsonify({"ok":True})
 
@@ -525,7 +573,8 @@ def verify_password():
         # superadmin 拥有全部权限
         if row["role"] == "superadmin":
             perms = {"energy":True,"ac_log":True,"boiler_log":True,"users":True,"export":True,"settings":True}
-        return jsonify({"ok":True,"role":row["role"],"permissions":perms})
+        token = create_session(d.get("username",""), row["role"])
+        return jsonify({"ok":True,"role":row["role"],"permissions":perms,"token":token})
     return jsonify({"ok":False,"error":"账号或密码错误"}), 401
 
 @app.route("/api/change_password", methods=["POST"])
@@ -555,22 +604,48 @@ def export_csv():
     conn.close()
 
     if type_ == "elec":
-        header = "\ufeff日期,总用电量(kWh),环北线(kWh),打铁关线(kWh),DIK-1(kWh),DIK-2(kWh),DIK-5(kWh)"
+        header = "\ufeff日期,总用电量(kWh),环北线(kWh),打铁关线(kWh),DIK-1(kWh),DIK-2(kWh),DIK-5(kWh),环北线读数,打铁关线读数,DIK-1读数,DIK-2读数,DIK-5读数,操作人"
         lines = [header]
         for r in rows:
-            lines.append(f"{r['date']},{r['elec_usage'] or 0},{r['elec_huanbei_usage'] or 0},{r['elec_datieguan_usage'] or 0},{r['dik1_usage'] or 0},{r['dik2_usage'] or 0},{r['dik5_usage'] or 0}")
+            lines.append(",".join([
+                str(r["date"]),
+                str(r["elec_usage"] or 0),
+                str(r["elec_huanbei_usage"] or 0),
+                str(r["elec_datieguan_usage"] or 0),
+                str(r["dik1_usage"] or 0),
+                str(r["dik2_usage"] or 0),
+                str(r["dik5_usage"] or 0),
+                str(r["elec_huanbei_raw"] or ""),
+                str(r["elec_datieguan_raw"] or ""),
+                str(r["dik1_raw"] or ""),
+                str(r["dik2_raw"] or ""),
+                str(r["dik5_raw"] or ""),
+                str(r["operator"] or ""),
+            ]))
         fname = f"energy_elec_{s}_{e}.csv"
     elif type_ == "water":
-        header = "\ufeff日期,总用水量(m³),水表读数"
+        header = "\ufeff日期,总用水量(m³),水表读数,热水用量(m³),热水表读数,操作人"
         lines = [header]
         for r in rows:
-            lines.append(f"{r['date']},{r['water_usage'] or 0},{r['water_raw'] or ''}")
+            lines.append(",".join([
+                str(r["date"]),
+                str(r["water_usage"] or 0),
+                str(r["water_raw"] or ""),
+                str(r["hot_water_usage"] or 0),
+                str(r["hot_water_raw"] or ""),
+                str(r["operator"] or ""),
+            ]))
         fname = f"energy_water_{s}_{e}.csv"
     elif type_ == "gas":
-        header = "\ufeff日期,总用气量(m³),气表读数"
+        header = "\ufeff日期,总用气量(m³),气表读数,操作人"
         lines = [header]
         for r in rows:
-            lines.append(f"{r['date']},{r['gas_usage'] or 0},{r['gas_raw'] or ''}")
+            lines.append(",".join([
+                str(r["date"]),
+                str(r["gas_usage"] or 0),
+                str(r["gas_raw"] or ""),
+                str(r["operator"] or ""),
+            ]))
         fname = f"energy_gas_{s}_{e}.csv"
     else:
         # 全部导出：能耗记录 + 空调开关 + 锅炉开关
@@ -594,7 +669,7 @@ def export_csv():
             f"时间范围,{s or '全部'} 至 {e or '全部'}",
             "",
             "【能耗记录】",
-            "日期,总用电量(kWh),环北线(kWh),打铁关线(kWh),DIK-1(kWh),DIK-2(kWh),DIK-5(kWh),总用水量(m3),总用气量(m3),环北线读数,打铁关线读数,DIK-1读数,DIK-2读数,DIK-5读数,水表读数,气表读数"
+            "日期,总用电量(kWh),环北线(kWh),打铁关线(kWh),DIK-1(kWh),DIK-2(kWh),DIK-5(kWh),总用水量(m3),总用气量(m3),热水用量(m3),环北线读数,打铁关线读数,DIK-1读数,DIK-2读数,DIK-5读数,水表读数,气表读数,热水表读数,操作人,备注"
         ]
         for r in rows:
             lines.append(",".join([
@@ -607,6 +682,7 @@ def export_csv():
                 str(r["dik5_usage"] or 0),
                 str(r["water_usage"] or 0),
                 str(r["gas_usage"] or 0),
+                str(r["hot_water_usage"] or 0),
                 str(r["elec_huanbei_raw"] or ""),
                 str(r["elec_datieguan_raw"] or ""),
                 str(r["dik1_raw"] or ""),
@@ -614,6 +690,9 @@ def export_csv():
                 str(r["dik5_raw"] or ""),
                 str(r["water_raw"] or ""),
                 str(r["gas_raw"] or ""),
+                str(r["hot_water_raw"] or ""),
+                str(r["operator"] or ""),
+                str(r["notes"] or ""),
             ]))
 
         lines += [
@@ -636,6 +715,25 @@ def export_csv():
             lines.append(",".join([
                 str(r["date"]), str(r["time"]), str(r["device"]),
                 str(r["status"]), str(r["operator"] or ""), str(r["notes"] or "")
+            ]))
+
+        # 交接班记录
+        conn3 = get_db()
+        q_notes = "SELECT * FROM daily_notes WHERE 1=1"; p_notes = []
+        if s: q_notes += " AND date>=?"; p_notes.append(s)
+        if e: q_notes += " AND date<=?"; p_notes.append(e)
+        note_rows = conn3.execute(q_notes + " ORDER BY date,time", p_notes).fetchall()
+        conn3.close()
+
+        lines += [
+            "",
+            "【交接班记录】",
+            "日期,时间,操作人,内容"
+        ]
+        for r in note_rows:
+            lines.append(",".join([
+                str(r["date"]), str(r["time"]),
+                str(r["operator"] or ""), str(r["content"] or "")
             ]))
 
         range_str = f"_{s}_{e}" if (s or e) else ""
@@ -693,16 +791,18 @@ def data_import():
         try:
             conn.execute("""INSERT OR IGNORE INTO energy_entries
                 (date,elec_huanbei_raw,elec_datieguan_raw,dik1_raw,dik2_raw,dik5_raw,
-                 water_raw,gas_raw,elec_huanbei_usage,elec_datieguan_usage,
+                 water_raw,gas_raw,hot_water_raw,
+                 elec_huanbei_usage,elec_datieguan_usage,
                  dik1_usage,dik2_usage,dik5_usage,elec_usage,water_usage,gas_usage,
-                 ac_hours,notes,operator,created_at,updated_at)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                 hot_water_usage,ac_hours,notes,operator,created_at,updated_at)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (r.get("date"), r.get("elec_huanbei_raw"), r.get("elec_datieguan_raw"),
                  r.get("dik1_raw"), r.get("dik2_raw"), r.get("dik5_raw"),
-                 r.get("water_raw"), r.get("gas_raw"),
+                 r.get("water_raw"), r.get("gas_raw"), r.get("hot_water_raw"),
                  r.get("elec_huanbei_usage",0), r.get("elec_datieguan_usage",0),
                  r.get("dik1_usage",0), r.get("dik2_usage",0), r.get("dik5_usage",0),
                  r.get("elec_usage",0), r.get("water_usage",0), r.get("gas_usage",0),
+                 r.get("hot_water_usage",0),
                  r.get("ac_hours",0), r.get("notes",""), r.get("operator",""),
                  r.get("created_at",""), r.get("updated_at","")))
             cnt += conn.execute("SELECT changes()").fetchone()[0]

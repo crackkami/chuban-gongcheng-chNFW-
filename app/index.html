@@ -306,7 +306,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
         <div class="g2 metrics-grid" style="gap:8px;margin-bottom:8px">
           <div class="mcard"><div class="mcard-label">总用电量</div><div class="mcard-val" id="m-elec">—</div><div class="mcard-unit">kWh</div></div>
           <div class="mcard"><div class="mcard-label">空调系统用电</div><div class="mcard-val" id="m-dik-total">—</div><div class="mcard-unit">kWh</div></div>
-          <div class="mcard"><div class="mcard-label">总用水量</div><div class="mcard-val" id="m-water">—</div><div class="mcard-unit">m³</div></div>
+          <div class="mcard" style="display:flex;flex-direction:row;gap:0;padding:0;overflow:hidden">
+            <div style="flex:1;padding:10px 12px">
+              <div class="mcard-label">总用水量</div>
+              <div class="mcard-val" id="m-water" style="font-size:20px">—</div>
+              <div class="mcard-unit">m³</div>
+            </div>
+            <div style="width:1px;background:var(--border);align-self:stretch"></div>
+            <div style="flex:1;padding:10px 12px">
+              <div class="mcard-label">热水用量</div>
+              <div class="mcard-val" id="m-hot-water" style="font-size:20px">—</div>
+              <div class="mcard-unit">m³</div>
+            </div>
+          </div>
           <div class="mcard"><div class="mcard-label">总用气量</div><div class="mcard-val" id="m-gas">—</div><div class="mcard-unit">m³</div></div>
         </div>
 
@@ -439,7 +451,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
         </div>
         <div class="tbl-wrap" style="overflow-x:auto">
           <table class="tbl">
-            <thead><tr><th>日期</th><th>用电(kWh)</th><th>用水(m³)</th><th>用气(m³)</th><th>环北线读数</th><th>打铁关线读数</th><th>水表读数</th><th>气表读数</th><th>操作</th></tr></thead>
+            <thead><tr><th>日期</th><th>用电(kWh)</th><th>用水(m³)</th><th>用气(m³)</th><th>热水(m³)</th><th>DIK-1(kWh)</th><th>DIK-2(kWh)</th><th>DIK-5(kWh)</th><th>DIK-1读数</th><th>DIK-2读数</th><th>DIK-5读数</th><th>环北线读数</th><th>打铁关线读数</th><th>水表读数</th><th>气表读数</th><th>热水读数</th><th>操作人</th><th>备注</th><th>操作</th></tr></thead>
             <tbody id="energy-tbody"><tr><td colspan="10" class="loading">加载中...</td></tr></tbody>
           </table>
         </div>
@@ -461,7 +473,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
         </div>
         <div style="overflow-x:auto">
           <table class="tbl">
-            <thead><tr><th>日期</th><th>时间</th><th>设备</th><th>状态</th><th>操作人</th><th>操作</th></tr></thead>
+            <thead><tr><th>日期</th><th>时间</th><th>设备</th><th>状态</th><th>操作人</th><th>备注</th><th>操作</th></tr></thead>
             <tbody id="d1k-tbody"><tr><td colspan="7" class="loading">加载中...</td></tr></tbody>
           </table>
         </div>
@@ -483,7 +495,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
         </div>
         <div style="overflow-x:auto">
           <table class="tbl">
-            <thead><tr><th>日期</th><th>时间</th><th>设备</th><th>状态</th><th>操作人</th><th>操作</th></tr></thead>
+            <thead><tr><th>日期</th><th>时间</th><th>设备</th><th>状态</th><th>操作人</th><th>备注</th><th>操作</th></tr></thead>
             <tbody id="boiler-tbody"><tr><td colspan="7" class="loading">加载中...</td></tr></tbody>
           </table>
         </div>
@@ -537,8 +549,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
         </div>
         <div style="overflow-x:auto;max-height:240px;overflow-y:auto">
           <table class="tbl">
-            <thead><tr><th>日期</th><th>总用电(kWh)</th><th>环北线(kWh)</th><th>打铁关线(kWh)</th><th>DIK-1</th><th>DIK-2</th><th>DIK-5</th><th>用水(m³)</th><th>用气(m³)</th></tr></thead>
-            <tbody id="exp-energy-tbody"><tr><td colspan="9" class="loading">选择日期后点击预览</td></tr></tbody>
+            <thead><tr><th>日期</th><th>总用电(kWh)</th><th>环北线(kWh)</th><th>打铁关线(kWh)</th><th>DIK-1</th><th>DIK-2</th><th>DIK-5</th><th>用水(m³)</th><th>用气(m³)</th><th>热水(m³)</th><th>操作人</th></tr></thead>
+            <tbody id="exp-energy-tbody"><tr><td colspan="10" class="loading">选择日期后点击预览</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -798,26 +810,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       <div class="fg"><label>打铁关线 示数</label><input type="number" id="inp-elec-dtg" placeholder="当前累计读数" step="0.01"></div>
     </div>
 
-    <div class="fg-row2">
+    <div class="fg-row3">
       <div class="fg"><label>水表示数 (m³)</label><input type="number" id="inp-water" placeholder="当前累计读数"></div>
       <div class="fg"><label>气表示数 (m³)</label><input type="number" id="inp-gas" placeholder="当前累计读数"></div>
+      <div class="fg"><label>热水表示数 (m³)</label><input type="number" id="inp-hot-water" placeholder="当前累计读数"></div>
     </div>
 
     <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:4px">DIK 分表读数</div>
     <div class="fg-row3">
-      <div class="fg"><label>DIK-1 <span style="color:var(--text3);font-size:9px">(×120)</span></label><input type="number" id="inp-dik1" placeholder="1-2号空调" step="0.01"></div>
-      <div class="fg"><label>DIK-2 <span style="color:var(--text3);font-size:9px">(×120)</span></label><input type="number" id="inp-dik2" placeholder="3-4号空调" step="0.01"></div>
-      <div class="fg"><label>DIK-5 <span style="color:var(--text3);font-size:9px">(×40)</span></label><input type="number" id="inp-dik5" placeholder="循环泵冷却" step="0.01"></div>
+      <div class="fg"><label>DIK-1 示数 <span style="color:var(--text3);font-size:9px">1-2号空调</span></label><input type="number" id="inp-dik1" placeholder="当前累计读数" step="0.01"></div>
+      <div class="fg"><label>DIK-2 示数 <span style="color:var(--text3);font-size:9px">3-4号空调</span></label><input type="number" id="inp-dik2" placeholder="当前累计读数" step="0.01"></div>
+      <div class="fg"><label>DIK-5 示数 <span style="color:var(--text3);font-size:9px">循环泵冷却</span></label><input type="number" id="inp-dik5" placeholder="当前累计读数" step="0.01"></div>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <div style="font-size:11px;color:var(--text2)">空调运行时间将根据下方开关记录自动统计</div>
+      <div style="font-size:11px;color:var(--text2)">填写抄表读数，用量由系统自动计算（DIK-1/2 倍率×120，DIK-5 倍率×40）</div>
     </div>
 
     <div class="section-sep">
       空调开关记录
-      <button class="btn btn-sm" onclick="toggleAcEntry()">+ 添加</button>
+      <button class="btn btn-sm" id="btn-ac-toggle" onclick="toggleAcEntry()">+ 添加</button>
     </div>
     <div id="ac-entry" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">
       <div class="fg-row3" style="margin:0">
@@ -839,7 +852,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 
     <div class="section-sep">
       锅炉开关记录
-      <button class="btn btn-sm" onclick="toggleBoilerEntry()">+ 添加</button>
+      <button class="btn btn-sm" id="btn-boiler-toggle" onclick="toggleBoilerEntry()">+ 添加</button>
     </div>
     <div id="boiler-entry" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:14px">
       <div class="fg-row3" style="margin:0">
@@ -874,13 +887,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     </div>
     <input type="hidden" id="edit-energy-id">
     <div class="fg"><label>日期</label><input type="date" id="edit-e-date"></div>
-    <div class="fg-row3">
-      <div class="fg"><label>电表示数</label><input type="number" id="edit-e-elec"></div>
-      <div class="fg"><label>水表示数</label><input type="number" id="edit-e-water"></div>
-      <div class="fg"><label>气表示数</label><input type="number" id="edit-e-gas"></div>
-    </div>
     <div class="fg-row2">
-      <div class="fg"><label>备注</label><input type="text" id="edit-e-notes"></div>
+      <div class="fg"><label>环北线读数</label><input type="number" id="edit-e-hb" step="0.01" placeholder="当前累计读数"></div>
+      <div class="fg"><label>打铁关线读数</label><input type="number" id="edit-e-dtg" step="0.01" placeholder="当前累计读数"></div>
+    </div>
+    <div class="fg-row3">
+      <div class="fg"><label>DIK-1 读数</label><input type="number" id="edit-e-dik1" step="0.01"></div>
+      <div class="fg"><label>DIK-2 读数</label><input type="number" id="edit-e-dik2" step="0.01"></div>
+      <div class="fg"><label>DIK-5 读数</label><input type="number" id="edit-e-dik5" step="0.01"></div>
+    </div>
+    <div class="fg-row3">
+      <div class="fg"><label>水表读数 (m³)</label><input type="number" id="edit-e-water" step="0.01" placeholder="当前累计读数"></div>
+      <div class="fg"><label>气表读数 (m³)</label><input type="number" id="edit-e-gas" step="0.01" placeholder="当前累计读数"></div>
+      <div class="fg"><label>热水表读数 (m³)</label><input type="number" id="edit-e-hot-water" step="0.01" placeholder="当前累计读数"></div>
+    </div>
+    <div class="fg">
+      <label>备注</label><input type="text" id="edit-e-notes">
     </div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-accent" onclick="submitEditEnergy()">保存修改</button>
@@ -893,7 +915,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 <div class="modal-wrap" id="modal-edit-d1k">
   <div class="modal">
     <div class="modal-hd">
-      <h2>修改 D1K 记录</h2>
+      <h2>修改空调记录</h2>
       <button class="btn btn-sm" onclick="closeModal('modal-edit-d1k')">关闭</button>
     </div>
     <input type="hidden" id="edit-d1k-id">
@@ -906,7 +928,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
         <select id="edit-d-device"><option>DIK-1</option><option>DIK-2</option><option>DIK-5</option></select>
       </div>
       <div class="fg"><label>状态</label>
-        <select id="edit-d-status"><option>开启</option><option>关闭</option></select>
+        <select id="edit-d-status"><option value="开">开</option><option value="关">关</option></select>
       </div>
     </div>
     <div class="fg-row2">
@@ -1113,23 +1135,29 @@ function highlightSwTab(tab) {
 }
 
 function toggleAcEntry() {
+  var btn = document.getElementById('btn-ac-toggle');
   var el = document.getElementById('ac-entry');
-  if (!el) return;
   var show = el.style.display === 'none';
   el.style.display = show ? 'block' : 'none';
-  if (show) {
-    var t = document.getElementById('ac-time');
-    if (t) t.value = new Date().toTimeString().slice(0,5);
+  if (btn) btn.textContent = show ? '× 取消' : '+ 添加';
+  if (!show) {
+    // 收起时清空字段
+    document.getElementById('ac-time').value = '';
+    document.getElementById('ac-status').selectedIndex = 0;
+    document.getElementById('ac-device').selectedIndex = 0;
   }
 }
 function toggleBoilerEntry() {
+  var btn = document.getElementById('btn-boiler-toggle');
   var el = document.getElementById('boiler-entry');
-  if (!el) return;
   var show = el.style.display === 'none';
   el.style.display = show ? 'block' : 'none';
-  if (show) {
-    var t = document.getElementById('boiler-time');
-    if (t) t.value = new Date().toTimeString().slice(0,5);
+  if (btn) btn.textContent = show ? '× 取消' : '+ 添加';
+  if (!show) {
+    // 收起时清空字段
+    document.getElementById('boiler-time').value = '';
+    document.getElementById('boiler-status').selectedIndex = 0;
+    document.getElementById('boiler-device').selectedIndex = 0;
   }
 }
 function switchSw(tab) {
@@ -1152,6 +1180,7 @@ async function renderFront() {
   document.getElementById('m-water').textContent = me.reduce((s, e) => s + (e.water_usage || 0), 0).toFixed(2);
   document.getElementById('m-gas').textContent = me.reduce((s, e) => s + (e.gas_usage || 0), 0).toFixed(2);
   var dikEl = document.getElementById('m-dik-total'); if(dikEl) dikEl.textContent = me.reduce((s,e) => s+(e.dik1_usage||0)+(e.dik2_usage||0)+(e.dik5_usage||0), 0).toFixed(1);
+  var hotEl = document.getElementById('m-hot-water'); if(hotEl) hotEl.textContent = me.reduce((s,e) => s+(e.hot_water_usage||0), 0).toFixed(2);
   var hb = document.getElementById('m-huanbei'); if (hb) hb.textContent = me.reduce((s,e) => s+(e.elec_huanbei_usage||0), 0).toFixed(1);
   var dtg = document.getElementById('m-datieguan'); if (dtg) dtg.textContent = me.reduce((s,e) => s+(e.elec_datieguan_usage||0), 0).toFixed(1);
   renderEnergyChart(entries, curEKey);
@@ -1166,7 +1195,7 @@ async function renderAdminTables() {
 
   var etb = document.getElementById('energy-tbody');
   if (!entries.length) {
-    etb.innerHTML = '<tr><td colspan="10" class="loading">暂无数据</td></tr>';
+    etb.innerHTML = '<tr><td colspan="18" class="loading">暂无数据</td></tr>';
   } else {
     etb.innerHTML = entries.slice().reverse().slice(0, 60).map(function(e) {
       var edata = JSON.stringify(e).replace(/"/g, '&quot;');
@@ -1175,10 +1204,20 @@ async function renderAdminTables() {
         '<td class="mono" style="color:#00d4aa">' + (e.elec_usage||0).toFixed(1) + '</td>' +
         '<td class="mono" style="color:#0099ff">' + (e.water_usage||0).toFixed(2) + '</td>' +
         '<td class="mono" style="color:#f5a623">' + (e.gas_usage||0).toFixed(2) + '</td>' +
-        '<td class="mono" style="color:#4a5568">' + (e.elec_huanbei_raw != null ? e.elec_huanbei_raw : '—') + '</td>' +
-        '<td class="mono" style="color:#4a5568">' + (e.elec_datieguan_raw != null ? e.elec_datieguan_raw : '—') + '</td>' +
-        '<td class="mono" style="color:#4a5568">' + (e.water_raw != null ? e.water_raw : '—') + '</td>' +
-        '<td class="mono" style="color:#4a5568">' + (e.gas_raw != null ? e.gas_raw : '—') + '</td>' +
+        '<td class="mono" style="color:#00bcd4">' + (e.hot_water_usage||0).toFixed(2) + '</td>' +
+        '<td class="mono" style="color:#a78bfa">' + (e.dik1_usage != null ? e.dik1_usage : '—') + '</td>' +
+        '<td class="mono" style="color:#a78bfa">' + (e.dik2_usage != null ? e.dik2_usage : '—') + '</td>' +
+        '<td class="mono" style="color:#a78bfa">' + (e.dik5_usage != null ? e.dik5_usage : '—') + '</td>' +
+        '<td class="mono" style="color:var(--text3)">' + (e.dik1_raw != null ? e.dik1_raw : '—') + '</td>' +
+        '<td class="mono" style="color:var(--text3)">' + (e.dik2_raw != null ? e.dik2_raw : '—') + '</td>' +
+        '<td class="mono" style="color:var(--text3)">' + (e.dik5_raw != null ? e.dik5_raw : '—') + '</td>' +
+        '<td class="mono" style="color:var(--text3)">' + (e.elec_huanbei_raw != null ? e.elec_huanbei_raw : '—') + '</td>' +
+        '<td class="mono" style="color:var(--text3)">' + (e.elec_datieguan_raw != null ? e.elec_datieguan_raw : '—') + '</td>' +
+        '<td class="mono" style="color:var(--text3)">' + (e.water_raw != null ? e.water_raw : '—') + '</td>' +
+        '<td class="mono" style="color:var(--text3)">' + (e.gas_raw != null ? e.gas_raw : '—') + '</td>' +
+        '<td class="mono" style="color:var(--text3)">' + (e.hot_water_raw != null ? e.hot_water_raw : '—') + '</td>' +
+        '<td style="color:var(--text2);font-size:12px">' + (e.operator||'—') + '</td>' +
+        '<td style="color:var(--text2);font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (e.notes||'') + '</td>' +
         '<td>' +
           '<button class="btn btn-sm" onclick="editEnergy(' + edata + ')">编辑</button> ' +
           '<button class="btn btn-sm btn-danger" onclick="delEntry(' + e.id + ')">删除</button>' +
@@ -1189,7 +1228,7 @@ async function renderAdminTables() {
 
   var dtb = document.getElementById('d1k-tbody');
   if (!d1kLogs.length) {
-    dtb.innerHTML = '<tr><td colspan="6" class="loading">暂无记录</td></tr>';
+    dtb.innerHTML = '<tr><td colspan="7" class="loading">暂无记录</td></tr>';
   } else {
     dtb.innerHTML = d1kLogs.slice(0, 60).map(function(r) {
       var rdata = JSON.stringify(r).replace(/"/g, '&quot;');
@@ -1201,6 +1240,7 @@ async function renderAdminTables() {
         '<td>' + r.device + ' <span style="color:var(--text3);font-size:10px">' + (devLabel[r.device]||'') + '</span></td>' +
         '<td><span class="pill ' + pillCls + '">' + r.status + '</span></td>' +
         '<td>' + (r.operator||'—') + '</td>' +
+        '<td style="color:var(--text2);font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.notes||'') + '</td>' +
         '<td>' +
           '<button class="btn btn-sm" onclick="editD1K(' + rdata + ')">编辑</button> ' +
           '<button class="btn btn-sm btn-danger" onclick="delD1K(' + r.id + ')">删除</button>' +
@@ -1215,7 +1255,7 @@ async function renderAdminTables() {
     if (cnt) cnt.textContent = '共 ' + boilerLogs.length + ' 条';
     var btb = document.getElementById('boiler-tbody');
     if (!btb) return;
-    if (!boilerLogs.length) { btb.innerHTML = '<tr><td colspan="6" class="loading">暂无记录</td></tr>'; return; }
+    if (!boilerLogs.length) { btb.innerHTML = '<tr><td colspan="7" class="loading">暂无记录</td></tr>'; return; }
     btb.innerHTML = boilerLogs.slice(0, 60).map(function(r) {
       var rdata = JSON.stringify(r).replace(/"/g, '&quot;');
       var pillCls = r.status === '开' ? 'pill-on' : 'pill-off';
@@ -1225,6 +1265,7 @@ async function renderAdminTables() {
         '<td>' + (r.device||'—') + '</td>' +
         '<td><span class="pill ' + pillCls + '">' + r.status + '</span></td>' +
         '<td>' + (r.operator||'—') + '</td>' +
+        '<td style="color:var(--text2);font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.notes||'') + '</td>' +
         '<td>' +
           '<button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> ' +
           '<button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button>' +
@@ -1365,11 +1406,13 @@ async function openDrawer() {
   if (opEl) opEl.value = '';
   var now = new Date().toTimeString().slice(0,5);
   // 清空输入值
-  var ids = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas'];
+  var ids = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas','inp-hot-water'];
   ids.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   // 隐藏空调/锅炉区块，等用户手动添加
   var acEntry = document.getElementById('ac-entry'); if(acEntry) acEntry.style.display='none';
   var boEntry = document.getElementById('boiler-entry'); if(boEntry) boEntry.style.display='none';
+  var btnAc = document.getElementById('btn-ac-toggle'); if(btnAc) btnAc.textContent = '+ 添加';
+  var btnBo = document.getElementById('btn-boiler-toggle'); if(btnBo) btnBo.textContent = '+ 添加';
   var acT = document.getElementById('ac-time'); if(acT) acT.value = now;
   var boT = document.getElementById('boiler-time'); if(boT) boT.value = now;
   var acS = document.getElementById('ac-status'); if(acS) acS.selectedIndex=0;
@@ -1384,29 +1427,31 @@ async function openDrawer() {
     for (var i = 0; i < rows.length; i++) {
       if (rows[i].date === today) { existing = rows[i]; break; }
     }
-    // 今天之前的最后一条（用于 placeholder 参考）
-    var prev = null;
-    for (var i = rows.length - 1; i >= 0; i--) {
-      if (rows[i].date < today) { prev = rows[i]; break; }
+    // 每个字段各自往前找最近有值的记录（跳过该字段为 null 的天）
+    function prevVal(field) {
+      for (var i = rows.length - 1; i >= 0; i--) {
+        if (rows[i].date < today && rows[i][field] != null) return rows[i][field];
+      }
+      return null;
     }
 
-    function setField(id, existingVal, prevVal) {
+    function setField(id, field) {
       var el = document.getElementById(id);
       if (!el) return;
       el.value = '';
-      // 统一只显示 placeholder 提示，不回填 value
-      var refVal = (existing && existingVal != null) ? existingVal
-                 : (prev && prevVal != null)         ? prevVal
-                 : null;
+      var existingVal = existing ? existing[field] : null;
+      var pv = prevVal(field);
+      var refVal = (existingVal != null) ? existingVal : pv;
       el.placeholder = refVal != null ? '上次: ' + refVal : '当前累计读数';
     }
-    setField('inp-elec-hb',  existing && existing.elec_huanbei_raw,  prev && prev.elec_huanbei_raw);
-    setField('inp-elec-dtg', existing && existing.elec_datieguan_raw, prev && prev.elec_datieguan_raw);
-    setField('inp-dik1',     existing && existing.dik1_raw,           prev && prev.dik1_raw);
-    setField('inp-dik2',     existing && existing.dik2_raw,           prev && prev.dik2_raw);
-    setField('inp-dik5',     existing && existing.dik5_raw,           prev && prev.dik5_raw);
-    setField('inp-water',    existing && existing.water_raw,          prev && prev.water_raw);
-    setField('inp-gas',      existing && existing.gas_raw,            prev && prev.gas_raw);
+    setField('inp-elec-hb',  'elec_huanbei_raw');
+    setField('inp-elec-dtg', 'elec_datieguan_raw');
+    setField('inp-dik1',     'dik1_raw');
+    setField('inp-dik2',     'dik2_raw');
+    setField('inp-dik5',     'dik5_raw');
+    setField('inp-water',    'water_raw');
+    setField('inp-gas',      'gas_raw');
+    setField('inp-hot-water','hot_water_raw');
 
   }).catch(function(){});
   document.getElementById('drawer-main').classList.add('open');
@@ -1421,7 +1466,7 @@ function addD1KRow() {
   div.className = 'd1k-row'; div.id = id;
   div.innerHTML = `
     <div class="fg"><label>设备</label><select><option>DIK-1</option><option>DIK-2</option><option>DIK-5</option></select></div>
-    <div class="fg"><label>状态</label><select><option>开启</option><option>关闭</option></select></div>
+    <div class="fg"><label>状态</label><select><option value="开">开</option><option value="关">关</option></select></div>
     <div class="fg"><label>时间</label><input type="time" value="${now.toTimeString().slice(0,5)}"></div>
     <div class="fg"><label>操作人</label><input type="text" placeholder="姓名"></div>
     <div class="fg"><label>备注</label><input type="text" placeholder="可选"></div>
@@ -1434,7 +1479,7 @@ async function saveAll() {
   if (!date) { toast('请选择日期', 'err'); return; }
 
   // 检查是否有任何实际输入：能耗字段、空调开关、锅炉开关、备注
-  var energyInputs = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas'];
+  var energyInputs = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas','inp-hot-water'];
   var hasEnergy = energyInputs.some(function(id) {
     var v = document.getElementById(id).value.trim();
     return v !== '' && !isNaN(parseFloat(v));
@@ -1477,7 +1522,7 @@ async function saveAll() {
   }
 
   // 能耗数据：只有至少填写了一个表计读数才写入，避免空记录覆盖历史数据
-  var energyFields = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas'];
+  var energyFields = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas','inp-hot-water'];
   var hasEnergyData = energyFields.some(function(id) {
     var v = document.getElementById(id).value.trim();
     return v !== '' && !isNaN(parseFloat(v));
@@ -1498,13 +1543,46 @@ async function saveAll() {
       dik5_raw: toRaw('inp-dik5'),
       water_raw: toRaw('inp-water'),
       gas_raw: toRaw('inp-gas'),
+      hot_water_raw: toRaw('inp-hot-water'),
     };
-    await fetch(API + '/entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+    // ── 读数回退校验：填写值低于上次读数时弹警告 ──
+    var checkFields = [
+      { id: 'inp-elec-hb',    label: '环北线示数',    val: body.elec_huanbei_raw },
+      { id: 'inp-elec-dtg',   label: '打铁关线示数',  val: body.elec_datieguan_raw },
+      { id: 'inp-dik1',       label: 'DIK-1 示数',    val: body.dik1_raw },
+      { id: 'inp-dik2',       label: 'DIK-2 示数',    val: body.dik2_raw },
+      { id: 'inp-dik5',       label: 'DIK-5 示数',    val: body.dik5_raw },
+      { id: 'inp-water',      label: '水表示数',       val: body.water_raw },
+      { id: 'inp-gas',        label: '气表示数',       val: body.gas_raw },
+      { id: 'inp-hot-water',  label: '热水表示数',     val: body.hot_water_raw },
+    ];
+    var warnings = [];
+    checkFields.forEach(function(f) {
+      if (f.val == null) return;
+      var el = document.getElementById(f.id);
+      if (!el) return;
+      // 从 placeholder 里取上次读数（格式：上次: 123.45）
+      var ph = el.placeholder || '';
+      var m = ph.match(/上次:\s*([\d.]+)/);
+      if (m) {
+        var prev = parseFloat(m[1]);
+        if (f.val < prev) {
+          warnings.push(f.label + '：填写 ' + f.val + '，上次读数 ' + prev);
+        }
+      }
+    });
+    if (warnings.length > 0) {
+      var msg = '⚠️ 以下表计读数低于上次记录，请确认是否填写正确：\n\n' + warnings.join('\n') + '\n\n确认继续保存？';
+      if (!confirm(msg)) return;
+    }
+
+    await fetch(API + '/entries', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken }, body: JSON.stringify(body) });
   }
   // 备注单独存入 daily_notes（允许一天多条）
   if (hasNotes) {
     var now = new Date();
-    await fetch(API + '/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    await fetch(API + '/notes', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
       body: JSON.stringify({
         date: date,
         time: now.toTimeString().slice(0,5),
@@ -1523,11 +1601,11 @@ async function saveAll() {
   fetch(API + '/boiler').then(function(r){ return r.json(); }).then(function(logs) {
     document.getElementById('boiler-count').textContent = '共 ' + logs.length + ' 条';
     var tb = document.getElementById('boiler-tbody');
-    if (!logs.length) { tb.innerHTML = '<tr><td colspan="6" class="loading">暂无记录</td></tr>'; return; }
+    if (!logs.length) { tb.innerHTML = '<tr><td colspan="7" class="loading">暂无记录</td></tr>'; return; }
     tb.innerHTML = logs.slice(0,60).map(function(r) {
       var rdata = JSON.stringify(r).replace(/"/g,'&quot;');
       var pillCls = r.status === '开' ? 'pill-on' : 'pill-off';
-      return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.time + '</td><td>' + (r.device||'—') + '</td><td><span class="pill ' + pillCls + '">' + r.status + '</span></td><td>' + (r.operator||'—') + '</td><td><button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button></td></tr>';
+      return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.time + '</td><td>' + (r.device||'—') + '</td><td><span class="pill ' + pillCls + '">' + r.status + '</span></td><td>' + (r.operator||'—') + '</td><td style="color:var(--text2);font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.notes||'') + '</td><td><button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button></td></tr>';
     }).join('');
   });
 }
@@ -1535,9 +1613,14 @@ async function saveAll() {
 function editEnergy(e) {
   document.getElementById('edit-energy-id').value = e.id;
   document.getElementById('edit-e-date').value = e.date;
-  document.getElementById('edit-e-elec').value = e.elec_raw || '';
-  document.getElementById('edit-e-water').value = e.water_raw || '';
-  document.getElementById('edit-e-gas').value = e.gas_raw || '';
+  document.getElementById('edit-e-hb').value   = e.elec_huanbei_raw  != null ? e.elec_huanbei_raw  : '';
+  document.getElementById('edit-e-dtg').value  = e.elec_datieguan_raw != null ? e.elec_datieguan_raw : '';
+  document.getElementById('edit-e-dik1').value = e.dik1_raw != null ? e.dik1_raw : '';
+  document.getElementById('edit-e-dik2').value = e.dik2_raw != null ? e.dik2_raw : '';
+  document.getElementById('edit-e-dik5').value = e.dik5_raw != null ? e.dik5_raw : '';
+  document.getElementById('edit-e-water').value = e.water_raw != null ? e.water_raw : '';
+  document.getElementById('edit-e-gas').value   = e.gas_raw  != null ? e.gas_raw  : '';
+  document.getElementById('edit-e-hot-water').value = e.hot_water_raw != null ? e.hot_water_raw : '';
   document.getElementById('edit-e-notes').value = e.notes || '';
   openModal('modal-edit-energy');
 }
@@ -1545,12 +1628,17 @@ async function submitEditEnergy() {
   var id = document.getElementById('edit-energy-id').value;
   var body = {
     date: document.getElementById('edit-e-date').value,
-    elec_raw: parseFloat(document.getElementById('edit-e-elec').value) || null,
+    elec_huanbei_raw:   parseFloat(document.getElementById('edit-e-hb').value)   || null,
+    elec_datieguan_raw: parseFloat(document.getElementById('edit-e-dtg').value)  || null,
+    dik1_raw: parseFloat(document.getElementById('edit-e-dik1').value) || null,
+    dik2_raw: parseFloat(document.getElementById('edit-e-dik2').value) || null,
+    dik5_raw: parseFloat(document.getElementById('edit-e-dik5').value) || null,
     water_raw: parseFloat(document.getElementById('edit-e-water').value) || null,
-    gas_raw: parseFloat(document.getElementById('edit-e-gas').value) || null,
+    gas_raw:   parseFloat(document.getElementById('edit-e-gas').value)  || null,
+    hot_water_raw: parseFloat(document.getElementById('edit-e-hot-water').value) || null,
     notes: document.getElementById('edit-e-notes').value,
   };
-  await fetch(API + '/entries/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  await fetch(API + '/entries/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken }, body: JSON.stringify(body) });
   closeModal('modal-edit-energy');
   toast('修改成功');
   renderFront(); renderAdminTables();
@@ -1573,7 +1661,7 @@ function editD1K(r) {
 async function submitEditD1K() {
   var id = document.getElementById('edit-d1k-id').value;
   var body = { date: document.getElementById('edit-d-date').value, time: document.getElementById('edit-d-time').value, device: document.getElementById('edit-d-device').value, status: document.getElementById('edit-d-status').value, operator: document.getElementById('edit-d-op').value, notes: document.getElementById('edit-d-notes').value };
-  await fetch(API + '/d1k/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  await fetch(API + '/d1k/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken }, body: JSON.stringify(body) });
   closeModal('modal-edit-d1k'); toast('修改成功'); renderFront(); renderAdminTables();
 }
 async function delD1K(id) {
@@ -1631,7 +1719,7 @@ async function dataImportConfirm() {
   try {
     var r = await fetch(API + '/data/import', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
       body: JSON.stringify(_importPayload)
     });
     var res = await r.json();
@@ -1679,7 +1767,7 @@ async function dataClear() {
   try {
     var r = await fetch(API + '/data/clear', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
       body: JSON.stringify({ tables: tables })
     });
     var res = await r.json();
@@ -1764,7 +1852,7 @@ async function delOperator(id) {
 }
 async function saveSettings() {
   var body = { city: document.getElementById('set-city').value, city_lat: document.getElementById('set-lat').value, city_lon: document.getElementById('set-lon').value };
-  await fetch(API + '/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  await fetch(API + '/settings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken }, body: JSON.stringify(body) });
   toast('设置已保存'); loadWeather();
 }
 
@@ -1792,7 +1880,7 @@ async function previewExp() {
   var etb = document.getElementById('exp-energy-tbody');
   var ecnt = document.getElementById('exp-energy-count');
   if(ecnt) ecnt.textContent = '共 ' + eRows.length + ' 条';
-  if(!eRows.length) { etb.innerHTML = '<tr><td colspan="9" class="loading">暂无数据</td></tr>'; }
+  if(!eRows.length) { etb.innerHTML = '<tr><td colspan="10" class="loading">暂无数据</td></tr>'; }
   else etb.innerHTML = eRows.map(function(r) {
     return '<tr><td class="mono">' + r.date + '</td>' +
       '<td class="mono" style="color:#00d4aa">' + (r.elec_usage||0).toFixed(1) + '</td>' +
@@ -1802,7 +1890,9 @@ async function previewExp() {
       '<td class="mono" style="color:#0099ff">' + (r.dik2_usage||0).toFixed(1) + '</td>' +
       '<td class="mono" style="color:#f5a623">' + (r.dik5_usage||0).toFixed(1) + '</td>' +
       '<td class="mono">' + (r.water_usage||0).toFixed(2) + '</td>' +
-      '<td class="mono">' + (r.gas_usage||0).toFixed(2) + '</td></tr>';
+      '<td class="mono">' + (r.gas_usage||0).toFixed(2) + '</td>' +
+      '<td class="mono" style="color:#00bcd4">' + (r.hot_water_usage||0).toFixed(2) + '</td>' +
+      '<td style="color:var(--text2);font-size:12px">' + (r.operator||'—') + '</td></tr>';
   }).join('');
 
 }
@@ -1857,6 +1947,8 @@ renderFront();
 
 // ── 登录状态 + 权限 ────────────────────────────────────────
 var _adminUser = null;
+var _adminRole  = 'viewer';
+var _adminToken = '';
 var _adminPerms = {};  // {energy:true, ac_log:true, ...}
 
 var PERM_KEYS = ["energy","ac_log","boiler_log","users","export","settings"];
@@ -1867,6 +1959,21 @@ var PERM_TABS   = {energy:"atab-energy",ac_log:"atab-d1k",boiler_log:"atab-boile
 function applyPermissions() {
   var perms = _adminPerms;
   var isSuperadmin = (_adminUser === 'admin');
+  var isViewer = (_adminRole === 'viewer');
+
+  // viewer：隐藏后台能耗/空调/锅炉表格里的编辑和删除按钮（通过 CSS）
+  var styleId = 'viewer-style';
+  var existing = document.getElementById(styleId);
+  if (isViewer) {
+    if (!existing) {
+      var s = document.createElement('style');
+      s.id = styleId;
+      s.textContent = 'button[onclick^="delEntry"], button[onclick^="delD1K"], button[onclick^="delBoilerRec"], button[onclick^="editEnergy"], button[onclick^="editD1K"], button[onclick^="editBoilerRec"], button[onclick^="delNote"] { display:none !important; }';
+      document.head.appendChild(s);
+    }
+  } else {
+    if (existing) existing.remove();
+  }
   // 标签 ID 映射
   var tabMap = {
     energy:     'atab-energy',
@@ -1923,11 +2030,13 @@ function doLogin() {
   err.textContent = '验证中...';
   fetch(API + '/verify_password', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
     body: JSON.stringify({ username: u, password: p })
   }).then(function(r) { return r.json(); }).then(function(d) {
     if (d.ok) {
       _adminUser = u;
+      _adminRole  = d.role || 'viewer';
+      _adminToken = d.token || '';
       _adminPerms = d.permissions || {};
       err.textContent = '';
       goPage('pg-admin');
@@ -1953,6 +2062,8 @@ function goAdmin() {
 
 function doLogout() {
   _adminUser = null;
+  _adminRole = 'viewer';
+  _adminToken = '';
   toast('已退出登录');
   goPage('pg-front');
 }
@@ -1989,11 +2100,11 @@ function loadBoilerTable() {
   fetch(API + '/boiler').then(function(r){ return r.json(); }).then(function(logs) {
     document.getElementById('boiler-count').textContent = '共 ' + logs.length + ' 条';
     var tb = document.getElementById('boiler-tbody');
-    if (!logs.length) { tb.innerHTML = '<tr><td colspan="6" class="loading">暂无记录</td></tr>'; return; }
+    if (!logs.length) { tb.innerHTML = '<tr><td colspan="7" class="loading">暂无记录</td></tr>'; return; }
     tb.innerHTML = logs.slice(0,60).map(function(r) {
       var rdata = JSON.stringify(r).replace(/"/g,'&quot;');
       var pillCls = r.status === '开' ? 'pill-on' : 'pill-off';
-      return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.time + '</td><td>' + (r.device||'—') + '</td><td><span class="pill ' + pillCls + '">' + r.status + '</span></td><td>' + (r.operator||'—') + '</td><td><button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button></td></tr>';
+      return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.time + '</td><td>' + (r.device||'—') + '</td><td><span class="pill ' + pillCls + '">' + r.status + '</span></td><td>' + (r.operator||'—') + '</td><td style="color:var(--text2);font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.notes||'') + '</td><td><button class="btn btn-sm" onclick="editBoilerRec(' + rdata + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="delBoilerRec(' + r.id + ')">删除</button></td></tr>';
     }).join('');
   });
 }
@@ -2004,6 +2115,8 @@ function editBoilerRec(r) {
   document.getElementById('edit-b-time').value = r.time;
   document.getElementById('edit-b-device').value = r.device || '5楼平台锅炉';
   document.getElementById('edit-b-status').value = r.status;
+  document.getElementById('edit-b-op').value = r.operator || '';
+  document.getElementById('edit-b-notes').value = r.notes || '';
   openModal('modal-edit-boiler');
 }
 function submitEditBoiler() {
@@ -2012,9 +2125,11 @@ function submitEditBoiler() {
     date: document.getElementById('edit-b-date').value,
     time: document.getElementById('edit-b-time').value,
     device: document.getElementById('edit-b-device').value,
-    status: document.getElementById('edit-b-status').value
+    status: document.getElementById('edit-b-status').value,
+    operator: document.getElementById('edit-b-op').value,
+    notes: document.getElementById('edit-b-notes').value
   };
-  fetch(API + '/boiler/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  fetch(API + '/boiler/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken }, body: JSON.stringify(body) })
     .then(function() { closeModal('modal-edit-boiler'); toast('修改成功'); loadBoilerTable(); });
 }
 function delBoilerRec(id) {
@@ -2072,7 +2187,7 @@ function saveUserPerms(uid) {
   });
   var user = _usersCache.find(function(u){ return u.id === uid; });
   fetch(API + '/users/' + uid, {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
     body: JSON.stringify({ permissions: perms, role: user ? user.role : 'admin' })
   }).then(function(r){ return r.json(); }).then(function(d){
     if (d.ok) { toast('权限已保存'); loadUsers(); }
@@ -2093,7 +2208,7 @@ function createUser() {
       perms[cb.value] = cb.checked;
     });
   }
-  fetch(API + '/users', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  fetch(API + '/users', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
     body: JSON.stringify({ username: uname, password: upass, role: role, permissions: perms }) })
     .then(function(r){ return r.json(); }).then(function(d) {
       if (d.ok) {
@@ -2135,7 +2250,7 @@ function submitEditUser() {
   var msg = document.getElementById('edit-umsg');
   if (!pw || pw.length < 4) { msg.style.color='var(--red)'; msg.textContent='请输入新密码（至少4位）'; return; }
   var user = _usersCache.find(function(u){ return u.id === id; });
-  fetch(API + '/users/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+  fetch(API + '/users/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
     body: JSON.stringify({ password: pw, role: user ? user.role : 'admin' }) })
     .then(function(r){ return r.json(); }).then(function(d) {
       if (d.ok) { closeModal('modal-edit-user'); toast('密码修改成功'); loadUsers(); }
@@ -2158,7 +2273,7 @@ function changeMyPassword() {
   if (!oldP || !newP) { msg.style.color='var(--red)'; msg.textContent='请填写原密码和新密码'; return; }
   if (newP.length < 4) { msg.style.color='var(--red)'; msg.textContent='新密码至少4位'; return; }
   fetch(API + '/change_password', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
     body: JSON.stringify({ username: _adminUser, old_password: oldP, new_password: newP })
   }).then(function(r){ return r.json(); }).then(function(d) {
     if (d.ok) { msg.style.color='var(--green)'; msg.textContent='修改成功'; document.getElementById('chg-old').value=''; document.getElementById('chg-new').value=''; }
@@ -2187,8 +2302,12 @@ var _origRenderAdminTables = typeof renderAdminTables !== 'undefined' ? renderAd
         <select id="edit-b-status"><option value="开">开</option><option value="关">关</option></select>
       </div>
     </div>
+    <div class="fg-row2">
+      <div class="fg"><label>操作人</label><input type="text" id="edit-b-op"></div>
+      <div class="fg"><label>备注</label><input type="text" id="edit-b-notes"></div>
+    </div>
     <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="btn btn-accent" onclick="submitEditBoiler()">保存</button>
+      <button class="btn btn-accent" onclick="submitEditBoiler()">保存修改</button>
       <button class="btn" onclick="closeModal('modal-edit-boiler')">取消</button>
     </div>
   </div>
