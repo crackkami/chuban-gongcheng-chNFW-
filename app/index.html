@@ -443,6 +443,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
           <span class="card-title"><span class="icon" style="background:var(--green)"></span>能耗录入记录</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:11px;color:var(--text2)" id="energy-count"></span>
+            <button class="btn btn-sm btn-blue" onclick="openInsertEnergy()" style="white-space:nowrap">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              插入数据
+            </button>
             <button class="btn btn-sm" onclick="renderAdminTables()" title="刷新">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               刷新
@@ -465,6 +469,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
           <span class="card-title"><span class="icon" style="background:var(--purple)"></span>空调开关记录</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:11px;color:var(--text2)" id="d1k-count"></span>
+            <button class="btn btn-sm btn-blue" onclick="openInsertD1K()" style="white-space:nowrap">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              插入数据
+            </button>
             <button class="btn btn-sm" onclick="renderAdminTables()" title="刷新">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               刷新
@@ -487,6 +495,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
           <span class="card-title"><span class="icon" style="background:var(--amber)"></span>锅炉开关记录</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:11px;color:var(--text2)" id="boiler-count"></span>
+            <button class="btn btn-sm btn-blue" onclick="openInsertBoiler()" style="white-space:nowrap">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              插入数据
+            </button>
             <button class="btn btn-sm" onclick="loadBoilerTable()" title="刷新">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
               刷新
@@ -732,7 +744,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
                 </div>
               </div>
               <div style="margin-top:12px">
-                <div style="font-size:11px;color:var(--text2);margin-bottom:8px;letter-spacing:.4px">权限设置</div>
+                <div style="font-size:11px;color:var(--text2);margin-bottom:8px;letter-spacing:.4px">
+                  权限设置
+                  <span id="nu-perms-hint" style="display:none;color:var(--text3);font-weight:normal;margin-left:8px">（只读账号无后台权限）</span>
+                </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="nu-perms">
                   <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 8px;background:var(--bg4);border-radius:6px"><input type="checkbox" name="nu-perm" value="energy" checked> 能耗记录</label>
                   <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 8px;background:var(--bg4);border-radius:6px"><input type="checkbox" name="nu-perm" value="ac_log" checked> 空调开关</label>
@@ -874,6 +889,94 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     <div style="display:flex;gap:10px;margin-top:16px">
       <button class="btn btn-accent" onclick="saveAll()" style="flex:1;justify-content:center;padding:11px">保存全部</button>
       <button class="btn" onclick="closeDrawer()">取消</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════ MODAL: 插入能耗记录 ═══════════ -->
+<div class="modal-wrap" id="modal-insert-energy">
+  <div class="modal">
+    <div class="modal-hd"><h2>插入能耗记录</h2><button class="btn btn-sm" onclick="closeModal('modal-insert-energy')">关闭</button></div>
+    <div class="fg"><label>日期</label><input type="date" id="ins-e-date" onchange="loadInsertEnergyData(this.value)"></div>
+    <div id="ins-e-exist-hint" style="display:none;font-size:11px;color:var(--warn);margin-bottom:8px">⚠️ 该日已有数据，保存后将覆盖</div>
+    <div class="fg-row2">
+      <div class="fg"><label>环北线读数</label><input type="number" id="ins-e-hb" step="0.01" placeholder="—"></div>
+      <div class="fg"><label>打铁关线读数</label><input type="number" id="ins-e-dtg" step="0.01" placeholder="—"></div>
+    </div>
+    <div class="fg-row3">
+      <div class="fg"><label>DIK-1 读数</label><input type="number" id="ins-e-dik1" step="0.01" placeholder="—"></div>
+      <div class="fg"><label>DIK-2 读数</label><input type="number" id="ins-e-dik2" step="0.01" placeholder="—"></div>
+      <div class="fg"><label>DIK-5 读数</label><input type="number" id="ins-e-dik5" step="0.01" placeholder="—"></div>
+    </div>
+    <div class="fg-row3">
+      <div class="fg"><label>水表读数 (m³)</label><input type="number" id="ins-e-water" step="0.01" placeholder="—"></div>
+      <div class="fg"><label>气表读数 (m³)</label><input type="number" id="ins-e-gas" step="0.01" placeholder="—"></div>
+      <div class="fg"><label>热水表读数 (m³)</label><input type="number" id="ins-e-hot" step="0.01" placeholder="—"></div>
+    </div>
+    <div class="fg-row2">
+      <div class="fg"><label>操作人</label><input type="text" id="ins-e-op"></div>
+      <div class="fg"><label>备注</label><input type="text" id="ins-e-notes"></div>
+    </div>
+    <div id="ins-e-msg" style="font-size:12px;color:var(--warn);min-height:16px;margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-accent" onclick="submitInsertEnergy()">保存</button>
+      <button class="btn" onclick="closeModal('modal-insert-energy')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: 插入空调开关 ═══════════ -->
+<div class="modal-wrap" id="modal-insert-d1k">
+  <div class="modal">
+    <div class="modal-hd"><h2>插入空调开关记录</h2><button class="btn btn-sm" onclick="closeModal('modal-insert-d1k')">关闭</button></div>
+    <div class="fg-row2">
+      <div class="fg"><label>日期</label><input type="date" id="ins-d-date"></div>
+      <div class="fg"><label>时间</label><input type="time" id="ins-d-time"></div>
+    </div>
+    <div class="fg-row3">
+      <div class="fg"><label>设备</label>
+        <select id="ins-d-device">
+          <option value="DIK-1">DIK-1 · 1-2号空调</option>
+          <option value="DIK-2">DIK-2 · 3-4号空调</option>
+          <option value="DIK-5">DIK-5 · 循环泵冷却</option>
+        </select>
+      </div>
+      <div class="fg"><label>状态</label>
+        <select id="ins-d-status"><option value="开">开</option><option value="关">关</option></select>
+      </div>
+      <div class="fg"><label>操作人</label><input type="text" id="ins-d-op"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-accent" onclick="submitInsertD1K()">保存</button>
+      <button class="btn" onclick="closeModal('modal-insert-d1k')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: 插入锅炉开关 ═══════════ -->
+<div class="modal-wrap" id="modal-insert-boiler">
+  <div class="modal">
+    <div class="modal-hd"><h2>插入锅炉开关记录</h2><button class="btn btn-sm" onclick="closeModal('modal-insert-boiler')">关闭</button></div>
+    <div class="fg-row2">
+      <div class="fg"><label>日期</label><input type="date" id="ins-b-date"></div>
+      <div class="fg"><label>时间</label><input type="time" id="ins-b-time"></div>
+    </div>
+    <div class="fg-row3">
+      <div class="fg"><label>设备</label>
+        <select id="ins-b-device">
+          <option value="5楼平台锅炉">5楼平台锅炉</option>
+          <option value="地下室锅炉">地下室锅炉</option>
+        </select>
+      </div>
+      <div class="fg"><label>状态</label>
+        <select id="ins-b-status"><option value="开">开</option><option value="关">关</option></select>
+      </div>
+      <div class="fg"><label>操作人</label><input type="text" id="ins-b-op"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-accent" onclick="submitInsertBoiler()">保存</button>
+      <button class="btn" onclick="closeModal('modal-insert-boiler')">取消</button>
     </div>
   </div>
 </div>
@@ -1419,8 +1522,13 @@ async function openDrawer() {
   var boS = document.getElementById('boiler-status'); if(boS) boS.selectedIndex=0;
   var acD = document.getElementById('ac-device'); if(acD) acD.selectedIndex=0;
   var boD = document.getElementById('boiler-device'); if(boD) boD.selectedIndex=0;
-  // 拉取今天已有记录（优先）或最近一条记录，填入 placeholder 和已有值
+  // 拉取已有记录，填入 placeholder
   var today = document.getElementById('inp-date').value;
+  refreshDrawerFields(today);
+  document.getElementById('drawer-main').classList.add('open');
+}
+
+function refreshDrawerFields(today) {
   fetch(API + '/entries?start=2000-01-01').then(function(r){ return r.json(); }).then(function(rows) {
     // 今天已有记录
     var existing = null;
@@ -1454,8 +1562,15 @@ async function openDrawer() {
     setField('inp-hot-water','hot_water_raw');
 
   }).catch(function(){});
-  document.getElementById('drawer-main').classList.add('open');
 }
+
+function onDateChange(newDate) {
+  // 日期改变时清空所有输入框并重新拉取该日数据
+  var ids = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas','inp-hot-water'];
+  ids.forEach(function(id){ var el=document.getElementById(id); if(el){ el.value=''; el.placeholder='当前累计读数'; } });
+  if (newDate) refreshDrawerFields(newDate);
+}
+
 function closeDrawer() { document.getElementById('drawer-main').classList.remove('open'); }
 
 var d1kRowN = 0;
@@ -1645,8 +1760,8 @@ async function submitEditEnergy() {
 }
 async function delEntry(id) {
   if (!confirm('确认删除该条能耗记录？')) return;
-  await fetch(API + '/entries/' + id, { method: 'DELETE' });
-  toast('已删除'); renderFront(); renderAdminTables();
+  var r = await fetch(API + '/entries/' + id, { method: 'DELETE', headers: { 'X-Session-Token': _adminToken } });
+  if ((await r.json()).ok) { toast('已删除'); renderFront(); renderAdminTables(); } else { toast('删除失败', 'err'); }
 }
 function editD1K(r) {
   document.getElementById('edit-d1k-id').value = r.id;
@@ -1666,8 +1781,8 @@ async function submitEditD1K() {
 }
 async function delD1K(id) {
   if (!confirm('确认删除该条D1K记录？')) return;
-  await fetch(API + '/d1k/' + id, { method: 'DELETE' });
-  toast('已删除'); renderFront(); renderAdminTables();
+  var r = await fetch(API + '/d1k/' + id, { method: 'DELETE', headers: { 'X-Session-Token': _adminToken } });
+  if ((await r.json()).ok) { toast('已删除'); renderFront(); renderAdminTables(); } else { toast('删除失败', 'err'); }
 }
 
 // ── Settings ─────────────────────────────────────────────
@@ -1787,6 +1902,129 @@ async function dataClear() {
   } catch(ex) {
     toast('网络错误', 'err');
   }
+}
+
+
+// ── 后台插入数据 ─────────────────────────────────────────
+function openInsertEnergy() {
+  var d = new Date().toISOString().slice(0,10);
+  document.getElementById('ins-e-date').value = d;
+  document.getElementById('ins-e-msg').textContent = '';
+  openModal('modal-insert-energy');
+  loadInsertEnergyData(d);
+}
+
+async function loadInsertEnergyData(date) {
+  if (!date) return;
+  // 清空所有字段
+  var fields = ['ins-e-hb','ins-e-dtg','ins-e-dik1','ins-e-dik2','ins-e-dik5',
+                'ins-e-water','ins-e-gas','ins-e-hot','ins-e-op','ins-e-notes'];
+  fields.forEach(function(id){ var el=document.getElementById(id); if(el){ el.value=''; el.style.background=''; el.removeAttribute('readonly'); } });
+  document.getElementById('ins-e-exist-hint').style.display = 'none';
+
+  // 拉取该日数据
+  var rows = await (await fetch(API + '/entries?start=' + date + '&end=' + date)).json();
+  if (!rows.length) return;
+
+  // 有数据：填入并设为灰色只读
+  var r = rows[0];
+  var map = {
+    'ins-e-hb':   'elec_huanbei_raw',
+    'ins-e-dtg':  'elec_datieguan_raw',
+    'ins-e-dik1': 'dik1_raw',
+    'ins-e-dik2': 'dik2_raw',
+    'ins-e-dik5': 'dik5_raw',
+    'ins-e-water':'water_raw',
+    'ins-e-gas':  'gas_raw',
+    'ins-e-hot':  'hot_water_raw',
+  };
+  Object.keys(map).forEach(function(id) {
+    var el = document.getElementById(id);
+    var val = r[map[id]];
+    if (el) {
+      el.value = val != null ? val : '';
+      // 有数据时灰色背景提示，但仍可编辑
+      el.style.background = val != null ? 'var(--bg3)' : '';
+      el.style.color = '';
+      el.removeAttribute('readonly');
+    }
+  });
+  var opEl = document.getElementById('ins-e-op');
+  if (opEl) { opEl.value = r.operator || ''; opEl.style.background=''; }
+  var notesEl = document.getElementById('ins-e-notes');
+  if (notesEl) { notesEl.value = r.notes || ''; notesEl.style.background=''; }
+
+  document.getElementById('ins-e-exist-hint').style.display = 'block';
+}
+async function submitInsertEnergy() {
+  var date = document.getElementById('ins-e-date').value;
+  if (!date) { document.getElementById('ins-e-msg').textContent = '请选择日期'; return; }
+  function toR(id) {
+    var v = document.getElementById(id).value.trim();
+    return (v !== '' && !isNaN(parseFloat(v))) ? parseFloat(v) : null;
+  }
+  var body = {
+    date: date,
+    elec_huanbei_raw:   toR('ins-e-hb'),
+    elec_datieguan_raw: toR('ins-e-dtg'),
+    dik1_raw: toR('ins-e-dik1'), dik2_raw: toR('ins-e-dik2'), dik5_raw: toR('ins-e-dik5'),
+    water_raw: toR('ins-e-water'), gas_raw: toR('ins-e-gas'), hot_water_raw: toR('ins-e-hot'),
+    operator: document.getElementById('ins-e-op').value,
+    notes: document.getElementById('ins-e-notes').value,
+  };
+  // 检查是否有任何实际输入
+  var hasData = Object.keys(body).some(function(k){ return k !== 'date' && k !== 'operator' && k !== 'notes' && body[k] != null; });
+  if (!hasData) { document.getElementById('ins-e-msg').textContent = '请填写至少一项读数'; return; }
+  var r = await fetch(API + '/entries', { method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
+    body: JSON.stringify(body) });
+  var res = await r.json();
+  if (res.ok) { closeModal('modal-insert-energy'); toast('插入成功'); renderAdminTables(); renderFront(); }
+  else { document.getElementById('ins-e-msg').textContent = res.error || '保存失败'; }
+}
+
+function openInsertD1K() {
+  var now = new Date();
+  document.getElementById('ins-d-date').value = now.toISOString().slice(0,10);
+  document.getElementById('ins-d-time').value = now.toTimeString().slice(0,5);
+  document.getElementById('ins-d-op').value = '';
+  openModal('modal-insert-d1k');
+}
+async function submitInsertD1K() {
+  var date = document.getElementById('ins-d-date').value;
+  var time = document.getElementById('ins-d-time').value;
+  if (!date || !time) { toast('请填写日期和时间', 'err'); return; }
+  var r = await fetch(API + '/d1k', { method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
+    body: JSON.stringify([{ date: date, time: time,
+      device: document.getElementById('ins-d-device').value,
+      status: document.getElementById('ins-d-status').value,
+      operator: document.getElementById('ins-d-op').value, notes: '' }]) });
+  var res = await r.json();
+  if (res.ok) { closeModal('modal-insert-d1k'); toast('插入成功'); renderAdminTables(); }
+  else toast(res.error || '保存失败', 'err');
+}
+
+function openInsertBoiler() {
+  var now = new Date();
+  document.getElementById('ins-b-date').value = now.toISOString().slice(0,10);
+  document.getElementById('ins-b-time').value = now.toTimeString().slice(0,5);
+  document.getElementById('ins-b-op').value = '';
+  openModal('modal-insert-boiler');
+}
+async function submitInsertBoiler() {
+  var date = document.getElementById('ins-b-date').value;
+  var time = document.getElementById('ins-b-time').value;
+  if (!date || !time) { toast('请填写日期和时间', 'err'); return; }
+  var r = await fetch(API + '/boiler', { method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
+    body: JSON.stringify({ date: date, time: time,
+      device: document.getElementById('ins-b-device').value,
+      status: document.getElementById('ins-b-status').value,
+      operator: document.getElementById('ins-b-op').value, notes: '' }) });
+  var res = await r.json();
+  if (res.ok) { closeModal('modal-insert-boiler'); toast('插入成功'); loadBoilerTable(); }
+  else toast(res.error || '保存失败', 'err');
 }
 
 async function loadSettings() {
@@ -2010,7 +2248,14 @@ function onRoleChange(sel, permsContainerId) {
   var container = document.getElementById(permsContainerId);
   if (!container) return;
   var isViewer = sel.value === 'viewer';
-  container.style.display = isViewer ? 'none' : 'flex';
+  container.style.display = isViewer ? 'none' : 'grid';
+  // 显示/隐藏只读提示
+  var hint = document.getElementById(permsContainerId + '-hint');
+  if (hint) hint.style.display = isViewer ? 'inline' : 'none';
+  // 只读时取消所有勾选
+  if (isViewer) {
+    container.querySelectorAll('input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
+  }
 }
 
 // 从 checkbox 容器读取权限
@@ -2091,9 +2336,8 @@ function loadNotesTable() {
 }
 async function delNote(id) {
   if (!confirm('确认删除该条备注？')) return;
-  await fetch(API + '/notes/' + id, { method: 'DELETE' });
-  loadNotesTable();
-  toast('已删除');
+  var r = await fetch(API + '/notes/' + id, { method: 'DELETE', headers: { 'X-Session-Token': _adminToken } });
+  if ((await r.json()).ok) { loadNotesTable(); toast('已删除'); } else { toast('删除失败', 'err'); }
 }
 
 function loadBoilerTable() {
@@ -2134,8 +2378,9 @@ function submitEditBoiler() {
 }
 function delBoilerRec(id) {
   if (!confirm('确认删除？')) return;
-  fetch(API + '/boiler/' + id, { method: 'DELETE' })
-    .then(function() { toast('已删除'); loadBoilerTable(); });
+  fetch(API + '/boiler/' + id, { method: 'DELETE', headers: { 'X-Session-Token': _adminToken } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(d.ok){ toast('已删除'); loadBoilerTable(); } else { toast('删除失败','err'); } });
 }
 
 // ── 用户管理 ────────────────────────────────────────────────
@@ -2259,7 +2504,7 @@ function submitEditUser() {
 }
 function delUserRec(id, username) {
   if (!confirm('确认删除用户「' + username + '」？')) return;
-  fetch(API + '/users/' + id, { method: 'DELETE' })
+  fetch(API + '/users/' + id, { method: 'DELETE', headers: { 'X-Session-Token': _adminToken } })
     .then(function(r){ return r.json(); }).then(function(d) {
       if (d.ok) { toast('已删除'); loadUsers(); }
       else toast(d.error||'删除失败', 'err');
