@@ -2030,7 +2030,7 @@ function doLogin() {
   err.textContent = '验证中...';
   fetch(API + '/verify_password', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: u, password: p })
   }).then(function(r) { return r.json(); }).then(function(d) {
     if (d.ok) {

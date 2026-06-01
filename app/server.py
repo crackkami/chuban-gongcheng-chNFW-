@@ -97,6 +97,7 @@ def init_db():
     for col_sql in [
         "ALTER TABLE boiler_logs ADD COLUMN device TEXT NOT NULL DEFAULT '5楼平台锅炉'",
         "ALTER TABLE energy_entries ADD COLUMN operator TEXT DEFAULT ''",
+        "ALTER TABLE sessions ADD COLUMN role TEXT DEFAULT 'admin'",
         "ALTER TABLE energy_entries ADD COLUMN hot_water_raw REAL",
         "ALTER TABLE energy_entries ADD COLUMN hot_water_usage REAL DEFAULT 0",
         "ALTER TABLE energy_entries ADD COLUMN elec_huanbei_raw REAL",
