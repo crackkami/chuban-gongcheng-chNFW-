@@ -411,6 +411,7 @@ def update_entry(eid):
     dk5 = d.get("dik5_raw",           row["dik5_raw"])
     wat = d.get("water_raw",           row["water_raw"])
     gas = d.get("gas_raw",             row["gas_raw"])
+    hot = d.get("hot_water_raw",       row["hot_water_raw"])
 
     # 每个字段各自找最近一条有值的历史记录作为基准
     def prev_val_edit(field):
