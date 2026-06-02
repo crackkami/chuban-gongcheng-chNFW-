@@ -147,10 +147,17 @@ def get_session(token):
     return dict(row) if row else None
 
 def require_write(req):
-    """校验请求是否有写入权限，viewer 不允许写"""
+    """校验请求是否有写入权限：
+    - 无 token：允许（前台用户直接录入）
+    - 有 token 且 role=viewer：拒绝
+    - 有 token 且 role=admin/superadmin：允许
+    """
     token = req.headers.get("X-Session-Token","")
+    if not token:
+        return True   # 前台无 token，允许写入
     sess = get_session(token)
-    if not sess: return False
+    if not sess:
+        return True   # token 无效当作无 token 处理
     return sess.get("role") != "viewer"
 
 def calc_usage(cur, prev, mult=1):
