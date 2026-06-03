@@ -402,16 +402,22 @@ def update_entry(eid):
     d = request.json; conn = get_db()
     row = conn.execute("SELECT * FROM energy_entries WHERE id=?",(eid,)).fetchone()
     if not row: conn.close(); return jsonify({"error":"不存在"}), 404
-    date = d.get("date",row["date"])
-    # 编辑时：新提交有值用新值，否则保留记录原值
-    hb  = d.get("elec_huanbei_raw",  row["elec_huanbei_raw"])
-    dtg = d.get("elec_datieguan_raw", row["elec_datieguan_raw"])
-    dk1 = d.get("dik1_raw",           row["dik1_raw"])
-    dk2 = d.get("dik2_raw",           row["dik2_raw"])
-    dk5 = d.get("dik5_raw",           row["dik5_raw"])
-    wat = d.get("water_raw",           row["water_raw"])
-    gas = d.get("gas_raw",             row["gas_raw"])
-    hot = d.get("hot_water_raw",       row["hot_water_raw"])
+    date = d.get("date") or row["date"]
+
+    # 编辑时：前端传了非 null 值用新值，否则保留数据库原值
+    # 注意：d.get(key, fallback) 在 key 存在但值为 null 时仍返回 null，需显式判断
+    def pick(key, fallback):
+        v = d.get(key, None)
+        return v if v is not None else fallback
+
+    hb  = pick("elec_huanbei_raw",  row["elec_huanbei_raw"])
+    dtg = pick("elec_datieguan_raw", row["elec_datieguan_raw"])
+    dk1 = pick("dik1_raw",           row["dik1_raw"])
+    dk2 = pick("dik2_raw",           row["dik2_raw"])
+    dk5 = pick("dik5_raw",           row["dik5_raw"])
+    wat = pick("water_raw",           row["water_raw"])
+    gas = pick("gas_raw",             row["gas_raw"])
+    hot = pick("hot_water_raw",       row["hot_water_raw"])
 
     # 每个字段各自找最近一条有值的历史记录作为基准
     def prev_val_edit(field):
@@ -421,21 +427,23 @@ def update_entry(eid):
         ).fetchone()
         return r2[field] if r2 else None
 
-    hb_u  = calc_usage(hb,  prev_val_edit("elec_huanbei_raw"),  1500)
-    dtg_u = calc_usage(dtg, prev_val_edit("elec_datieguan_raw"), 1500)
-    dk1_u = calc_usage(dk1, prev_val_edit("dik1_raw"),           120)
-    dk2_u = calc_usage(dk2, prev_val_edit("dik2_raw"),           120)
-    dk5_u = calc_usage(dk5, prev_val_edit("dik5_raw"),           40)
-    wat_u = calc_usage(wat, prev_val_edit("water_raw"))
-    gas_u = calc_usage(gas, prev_val_edit("gas_raw"))
-    hot_u = calc_usage(hot, prev_val_edit("hot_water_raw"))
+    # 只对有值的字段重新计算 usage；无值则保留原 usage，避免无关字段变动影响计算结果
+    hb_u  = calc_usage(hb,  prev_val_edit("elec_huanbei_raw"),  1500) if hb  is not None else (row["elec_huanbei_usage"]  or 0)
+    dtg_u = calc_usage(dtg, prev_val_edit("elec_datieguan_raw"), 1500) if dtg is not None else (row["elec_datieguan_usage"] or 0)
+    dk1_u = calc_usage(dk1, prev_val_edit("dik1_raw"),           120)  if dk1 is not None else (row["dik1_usage"] or 0)
+    dk2_u = calc_usage(dk2, prev_val_edit("dik2_raw"),           120)  if dk2 is not None else (row["dik2_usage"] or 0)
+    dk5_u = calc_usage(dk5, prev_val_edit("dik5_raw"),           40)   if dk5 is not None else (row["dik5_usage"] or 0)
+    wat_u = calc_usage(wat, prev_val_edit("water_raw"))                 if wat is not None else (row["water_usage"] or 0)
+    gas_u = calc_usage(gas, prev_val_edit("gas_raw"))                   if gas is not None else (row["gas_usage"]   or 0)
+    hot_u = calc_usage(hot, prev_val_edit("hot_water_raw"))             if hot is not None else (row["hot_water_usage"] or 0)
     ac_h  = calc_ac_hours(conn, date)
     conn.execute("""UPDATE energy_entries SET date=?,elec_huanbei_raw=?,elec_datieguan_raw=?,
         dik1_raw=?,dik2_raw=?,dik5_raw=?,water_raw=?,gas_raw=?,hot_water_raw=?,
         elec_huanbei_usage=?,elec_datieguan_usage=?,dik1_usage=?,dik2_usage=?,dik5_usage=?,
-        elec_usage=?,water_usage=?,gas_usage=?,hot_water_usage=?,ac_hours=?,notes=?,updated_at=? WHERE id=?""",
+        elec_usage=?,water_usage=?,gas_usage=?,hot_water_usage=?,ac_hours=?,notes=?,operator=?,updated_at=? WHERE id=?""",
         (date,hb,dtg,dk1,dk2,dk5,wat,gas,hot,hb_u,dtg_u,dk1_u,dk2_u,dk5_u,
-         round((hb_u or 0)+(dtg_u or 0),2),wat_u,gas_u,hot_u,ac_h,d.get("notes",row["notes"]),dt.now().isoformat(),eid))
+         round((hb_u or 0)+(dtg_u or 0),2),wat_u,gas_u,hot_u,ac_h,
+         pick("notes",row["notes"]),pick("operator",row["operator"]),dt.now().isoformat(),eid))
     conn.commit(); conn.close(); return jsonify({"ok":True})
 
 @app.route("/api/entries/<int:eid>", methods=["DELETE"])

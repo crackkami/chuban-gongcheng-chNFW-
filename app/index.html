@@ -1004,8 +1004,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
       <div class="fg"><label>气表读数 (m³)</label><input type="number" id="edit-e-gas" step="0.01" placeholder="当前累计读数"></div>
       <div class="fg"><label>热水表读数 (m³)</label><input type="number" id="edit-e-hot-water" step="0.01" placeholder="当前累计读数"></div>
     </div>
-    <div class="fg">
-      <label>备注</label><input type="text" id="edit-e-notes">
+    <div class="fg-row2">
+      <div class="fg">
+        <label>操作员</label>
+        <select id="edit-e-op" style="width:100%">
+          <option value="">— 选择操作员 —</option>
+        </select>
+      </div>
+      <div class="fg"><label>备注</label><input type="text" id="edit-e-notes"></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-accent" onclick="submitEditEnergy()">保存修改</button>
@@ -1739,21 +1745,33 @@ function editEnergy(e) {
   document.getElementById('edit-e-gas').value   = e.gas_raw  != null ? e.gas_raw  : '';
   document.getElementById('edit-e-hot-water').value = e.hot_water_raw != null ? e.hot_water_raw : '';
   document.getElementById('edit-e-notes').value = e.notes || '';
+  // 填充操作员下拉（复用 _operators 列表）
+  var opSel = document.getElementById('edit-e-op');
+  opSel.innerHTML = '<option value="">— 选择操作员 —</option>' +
+    (_operators || []).map(function(op){ return '<option value="' + op.name + '">' + op.name + '</option>'; }).join('');
+  opSel.value = e.operator || '';
   openModal('modal-edit-energy');
 }
 async function submitEditEnergy() {
   var id = document.getElementById('edit-energy-id').value;
+  function toRawEdit(id) {
+    var v = document.getElementById(id).value.trim();
+    if (v === '') return null;
+    var n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  }
   var body = {
     date: document.getElementById('edit-e-date').value,
-    elec_huanbei_raw:   parseFloat(document.getElementById('edit-e-hb').value)   || null,
-    elec_datieguan_raw: parseFloat(document.getElementById('edit-e-dtg').value)  || null,
-    dik1_raw: parseFloat(document.getElementById('edit-e-dik1').value) || null,
-    dik2_raw: parseFloat(document.getElementById('edit-e-dik2').value) || null,
-    dik5_raw: parseFloat(document.getElementById('edit-e-dik5').value) || null,
-    water_raw: parseFloat(document.getElementById('edit-e-water').value) || null,
-    gas_raw:   parseFloat(document.getElementById('edit-e-gas').value)  || null,
-    hot_water_raw: parseFloat(document.getElementById('edit-e-hot-water').value) || null,
+    elec_huanbei_raw:   toRawEdit('edit-e-hb'),
+    elec_datieguan_raw: toRawEdit('edit-e-dtg'),
+    dik1_raw:           toRawEdit('edit-e-dik1'),
+    dik2_raw:           toRawEdit('edit-e-dik2'),
+    dik5_raw:           toRawEdit('edit-e-dik5'),
+    water_raw:          toRawEdit('edit-e-water'),
+    gas_raw:            toRawEdit('edit-e-gas'),
+    hot_water_raw:      toRawEdit('edit-e-hot-water'),
     notes: document.getElementById('edit-e-notes').value,
+    operator: document.getElementById('edit-e-op').value,
   };
   await fetch(API + '/entries/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken }, body: JSON.stringify(body) });
   closeModal('modal-edit-energy');
