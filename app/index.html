@@ -1659,6 +1659,8 @@ async function saveAll() {
       water_raw: toRaw('inp-water'),
       gas_raw: toRaw('inp-gas'),
       hot_water_raw: toRaw('inp-hot-water'),
+      operator: document.getElementById('inp-operator').value,
+      notes: document.getElementById('inp-notes').value,
     };
 
     // ── 读数回退校验：填写值低于上次读数时弹警告 ──
