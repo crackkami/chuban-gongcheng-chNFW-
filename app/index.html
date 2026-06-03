@@ -1745,11 +1745,13 @@ function editEnergy(e) {
   document.getElementById('edit-e-gas').value   = e.gas_raw  != null ? e.gas_raw  : '';
   document.getElementById('edit-e-hot-water').value = e.hot_water_raw != null ? e.hot_water_raw : '';
   document.getElementById('edit-e-notes').value = e.notes || '';
-  // 填充操作员下拉（复用 _operators 列表）
+  // 填充操作员下拉：每次打开都实时拉取，避免缓存未加载问题
   var opSel = document.getElementById('edit-e-op');
-  opSel.innerHTML = '<option value="">— 选择操作员 —</option>' +
-    (_operators || []).map(function(op){ return '<option value="' + op.name + '">' + op.name + '</option>'; }).join('');
-  opSel.value = e.operator || '';
+  var opVal = e.operator || '';
+  fetch(API + '/operators').then(function(r){ return r.json(); }).then(function(ops){
+    opSel.innerHTML = '<option value="">— 选择操作员 —</option>' +
+      ops.map(function(op){ return '<option value="' + op.name + '"' + (op.name === opVal ? ' selected' : '') + '>' + op.name + '</option>'; }).join('');
+  });
   openModal('modal-edit-energy');
 }
 async function submitEditEnergy() {
