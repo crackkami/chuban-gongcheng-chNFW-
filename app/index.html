@@ -805,7 +805,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     <div class="fg-row2" style="max-width:400px">
       <div class="fg" style="margin:0">
         <label>日期</label>
-        <input type="date" id="inp-date">
+        <input type="date" id="inp-date" onchange="onDateChange(this.value)">
       </div>
       <div class="fg" style="margin:0">
         <label>操作员</label>
@@ -977,6 +977,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn btn-accent" onclick="submitInsertBoiler()">保存</button>
       <button class="btn" onclick="closeModal('modal-insert-boiler')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: 通用提示 ═══════════ -->
+<div class="modal-wrap" id="modal-info">
+  <div class="modal">
+    <div class="modal-hd">
+      <h2 id="modal-info-title">提示</h2>
+    </div>
+    <div id="modal-info-body" style="line-height:1.6;color:var(--text1)"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="closeModal('modal-info')">确定</button>
     </div>
   </div>
 </div>
@@ -1541,6 +1554,7 @@ function refreshDrawerFields(today) {
     for (var i = 0; i < rows.length; i++) {
       if (rows[i].date === today) { existing = rows[i]; break; }
     }
+    document.getElementById('inp-date').dataset.entryExists = existing ? '1' : '0';
     // 每个字段各自往前找最近有值的记录（跳过该字段为 null 的天）
     function prevVal(field) {
       for (var i = rows.length - 1; i >= 0; i--) {
@@ -1596,8 +1610,16 @@ function addD1KRow() {
 }
 
 async function saveAll() {
-  var date = document.getElementById('inp-date').value;
+  var dateEl = document.getElementById('inp-date');
+  var date = dateEl.value;
   if (!date) { toast('请选择日期', 'err'); return; }
+
+  var today = new Date().toISOString().slice(0, 10);
+  if (date !== today) {
+    if (!confirm('当前日期不是今天，是否继续保存为 ' + date + '？请确认填写日期是否正确。')) {
+      return;
+    }
+  }
 
   // 检查是否有任何实际输入：能耗字段、空调开关、锅炉开关、备注
   var energyInputs = ['inp-elec-hb','inp-elec-dtg','inp-dik1','inp-dik2','inp-dik5','inp-water','inp-gas','inp-hot-water'];
@@ -1614,6 +1636,11 @@ async function saveAll() {
 
   if (!hasEnergy && !acHasTime && !boilerHasTime && !hasNotes) {
     toast('没有任何改动，无需保存', 'err');
+    return;
+  }
+
+  if (hasEnergy && dateEl.dataset.entryExists === '1') {
+    showInfoModal('提示', '该日期已有能耗记录，请不要重复录入');
     return;
   }
 
@@ -1745,6 +1772,18 @@ function editEnergy(e) {
   document.getElementById('edit-e-gas').value   = e.gas_raw  != null ? e.gas_raw  : '';
   document.getElementById('edit-e-hot-water').value = e.hot_water_raw != null ? e.hot_water_raw : '';
   document.getElementById('edit-e-notes').value = e.notes || '';
+  // 记录原始值，供保存前判断是否修改了关键读数/日期
+  document.getElementById('edit-energy-id').dataset.orig = JSON.stringify({
+    date: e.date,
+    elec_huanbei_raw: e.elec_huanbei_raw,
+    elec_datieguan_raw: e.elec_datieguan_raw,
+    dik1_raw: e.dik1_raw,
+    dik2_raw: e.dik2_raw,
+    dik5_raw: e.dik5_raw,
+    water_raw: e.water_raw,
+    gas_raw: e.gas_raw,
+    hot_water_raw: e.hot_water_raw
+  });
   // 填充操作员下拉：每次打开都实时拉取，避免缓存未加载问题
   var opSel = document.getElementById('edit-e-op');
   var opVal = e.operator || '';
@@ -1775,9 +1814,44 @@ async function submitEditEnergy() {
     notes: document.getElementById('edit-e-notes').value,
     operator: document.getElementById('edit-e-op').value,
   };
-  await fetch(API + '/entries/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken }, body: JSON.stringify(body) });
+
+  var orig = {};
+  try {
+    orig = JSON.parse(document.getElementById('edit-energy-id').dataset.orig || '{}');
+  } catch (e) {
+    orig = {};
+  }
+  var editedKeys = [];
+  if (body.date !== orig.date) editedKeys.push('日期');
+  [
+    ['elec_huanbei_raw', '环北线读数'],
+    ['elec_datieguan_raw', '打铁关线读数'],
+    ['dik1_raw', 'DIK-1 读数'],
+    ['dik2_raw', 'DIK-2 读数'],
+    ['dik5_raw', 'DIK-5 读数'],
+    ['water_raw', '水表读数'],
+    ['gas_raw', '气表读数'],
+    ['hot_water_raw', '热水表读数']
+  ].forEach(function(item) {
+    var key = item[0];
+    var label = item[1];
+    if ((body[key] != null || orig[key] != null) && body[key] !== orig[key]) {
+      editedKeys.push(label);
+    }
+  });
+  if (editedKeys.length) {
+    var confirmMsg = '已修改 ' + editedKeys.join('、') + '。保存后将自动重算该日期及之后的用量，是否继续？';
+    if (!confirm(confirmMsg)) return;
+  }
+
+  var res = await fetch(API + '/entries/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Session-Token': _adminToken }, body: JSON.stringify(body) });
   closeModal('modal-edit-energy');
-  toast('修改成功');
+  if (res.ok) {
+    toast('修改成功，后续记录已重算');
+  } else {
+    var err = await res.json();
+    toast(err.error || '修改失败', 'err');
+  }
   renderFront(); renderAdminTables();
 }
 async function delEntry(id) {
@@ -2181,6 +2255,13 @@ function adminTab(t) {
 }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showInfoModal(title, msg) {
+  var titleEl = document.getElementById('modal-info-title');
+  var bodyEl = document.getElementById('modal-info-body');
+  if (titleEl) titleEl.textContent = title || '提示';
+  if (bodyEl) bodyEl.textContent = msg || '';
+  openModal('modal-info');
+}
 
 // ── Toast ─────────────────────────────────────────────────
 function toast(msg, type) {

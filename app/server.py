@@ -165,6 +165,46 @@ def calc_usage(cur, prev, mult=1):
     d = (float(cur) - float(prev)) * mult
     return round(d, 2) if d >= 0 else 0
 
+def prev_raw_value(conn, field, date, exclude_id=None):
+    sql = f"SELECT {field} FROM energy_entries WHERE date<? AND {field} IS NOT NULL"
+    params = [date]
+    if exclude_id is not None:
+        sql += " AND id!=?"
+        params.append(exclude_id)
+    sql += " ORDER BY date DESC LIMIT 1"
+    row = conn.execute(sql, params).fetchone()
+    return row[field] if row else None
+
+def recalc_energy_entry(conn, row):
+    hb = row["elec_huanbei_raw"]
+    dtg = row["elec_datieguan_raw"]
+    dk1 = row["dik1_raw"]
+    dk2 = row["dik2_raw"]
+    dk5 = row["dik5_raw"]
+    wat = row["water_raw"]
+    gas = row["gas_raw"]
+    hot = row["hot_water_raw"]
+
+    hb_u  = calc_usage(hb,  prev_raw_value(conn, "elec_huanbei_raw", row["date"], row["id"]), 1500)
+    dtg_u = calc_usage(dtg, prev_raw_value(conn, "elec_datieguan_raw", row["date"], row["id"]), 1500)
+    dk1_u = calc_usage(dk1, prev_raw_value(conn, "dik1_raw", row["date"], row["id"]), 120)
+    dk2_u = calc_usage(dk2, prev_raw_value(conn, "dik2_raw", row["date"], row["id"]), 120)
+    dk5_u = calc_usage(dk5, prev_raw_value(conn, "dik5_raw", row["date"], row["id"]), 40)
+    wat_u = calc_usage(wat, prev_raw_value(conn, "water_raw", row["date"], row["id"]))
+    gas_u = calc_usage(gas, prev_raw_value(conn, "gas_raw", row["date"], row["id"]))
+    hot_u = calc_usage(hot, prev_raw_value(conn, "hot_water_raw", row["date"], row["id"]))
+    elec_u = round((hb_u or 0) + (dtg_u or 0), 2)
+
+    conn.execute("""UPDATE energy_entries SET
+        elec_huanbei_usage=?,elec_datieguan_usage=?,dik1_usage=?,dik2_usage=?,dik5_usage=?,
+        elec_usage=?,water_usage=?,gas_usage=?,hot_water_usage=?,updated_at=? WHERE id=?""",
+        (hb_u, dtg_u, dk1_u, dk2_u, dk5_u, elec_u, wat_u, gas_u, hot_u, dt.now().isoformat(), row["id"]))
+
+def recalc_energy_entries_from_date(conn, start_date):
+    rows = conn.execute("SELECT * FROM energy_entries WHERE date>=? ORDER BY date ASC", (start_date,)).fetchall()
+    for row in rows:
+        recalc_energy_entry(conn, row)
+
 def calc_ac_hours(conn, date):
     logs = conn.execute(
         "SELECT time,device,status FROM ac_logs WHERE date=? ORDER BY time", (date,)
@@ -346,8 +386,14 @@ def save_entry():
     gas = pick("gas_raw")
     hot = pick("hot_water_raw")
 
+    # 如果已有当天能耗数据且本次提交包含任何抄表值，则拒绝前台重复覆盖
+    if existing and any(existing[field] is not None for field in ["elec_huanbei_raw", "elec_datieguan_raw", "dik1_raw", "dik2_raw", "dik5_raw", "water_raw", "gas_raw", "hot_water_raw"]) \
+       and any(v is not None for v in [hb, dtg, dk1, dk2, dk5, wat, gas, hot]):
+        conn.close()
+        return jsonify({"error":"该日期已有能耗记录，请使用后台管理修改或确认录入日期。"}), 400
+
     # 全部字段都是 null（新提交+已有都没有）则跳过
-    if all(v is None for v in [hb,dtg,dk1,dk2,dk5,wat,gas]):
+    if all(v is None for v in [hb,dtg,dk1,dk2,dk5,wat,gas,hot]):
         # 仅更新 ac_hours（空调/锅炉开关刚录入时触发）
         if existing:
             ac_h = calc_ac_hours(conn, date)
@@ -444,6 +490,8 @@ def update_entry(eid):
         (date,hb,dtg,dk1,dk2,dk5,wat,gas,hot,hb_u,dtg_u,dk1_u,dk2_u,dk5_u,
          round((hb_u or 0)+(dtg_u or 0),2),wat_u,gas_u,hot_u,ac_h,
          pick("notes",row["notes"]),pick("operator",row["operator"]),dt.now().isoformat(),eid))
+    start_date = row["date"] if row["date"] < date else date
+    recalc_energy_entries_from_date(conn, start_date)
     conn.commit(); conn.close(); return jsonify({"ok":True})
 
 @app.route("/api/entries/<int:eid>", methods=["DELETE"])
