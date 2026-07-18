@@ -5,9 +5,23 @@ import sqlite3, os, subprocess, threading, time
 from datetime import datetime as dt, timedelta as td
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r'/api/*': {'origins': '*'}}, supports_credentials=False,
+     allow_headers=['Content-Type', 'X-Session-Token'], expose_headers=['Content-Type'], methods=['GET', 'HEAD', 'POST', 'OPTIONS', 'PUT', 'DELETE'])
 
-DB         = os.environ.get('DB_PATH',    '/data/dashboard.db')
+@app.after_request
+def add_cors_headers(response):
+    if request.path.startswith('/api/'):
+        origin = request.headers.get('Origin')
+        response.headers['Access-Control-Allow-Origin'] = origin or '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Session-Token'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,HEAD,POST,PUT,DELETE,OPTIONS'
+        response.headers['Access-Control-Allow-Credentials'] = 'false'
+    return response
+
+import meters  # 分表抄表台账模块（独立文件，见 meters.py）
+app.register_blueprint(meters.meters_bp)
+
+DB         = os.environ.get('DB_PATH',    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dashboard.db'))
 HTML_FILE  = os.environ.get('HTML_FILE',  os.path.join(os.path.dirname(os.path.abspath(__file__)), 'index.html'))
 
 CITY_MAP = {
@@ -97,9 +111,10 @@ def init_db():
     INSERT OR IGNORE INTO settings VALUES("city_lat","22.5431");
     INSERT OR IGNORE INTO settings VALUES("city_lon","114.0579");
     """)
+    meters.init_db(conn)  # 分表抄表台账自己的表，见 meters.py
     conn.execute("INSERT OR IGNORE INTO settings VALUES(?,?)", ("admin_password", _admin_pw))
     conn.execute("INSERT OR IGNORE INTO users(username,password,role,permissions) VALUES(?,?,?,?)",
-        (_admin_user, _admin_pw, "superadmin", '{"energy":true,"ac_log":true,"boiler_log":true,"users":true,"export":true,"settings":true}'))
+        (_admin_user, _admin_pw, "superadmin", '{"energy":true,"ac_log":true,"boiler_log":true,"users":true,"export":true,"settings":true,"meters":true}'))
     # 兼容旧库
     for col_sql in [
         "ALTER TABLE boiler_logs ADD COLUMN device TEXT NOT NULL DEFAULT '5楼平台锅炉'",
@@ -253,6 +268,10 @@ def index():
     r = make_response(send_file(HTML_FILE))
     r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return r
+
+@app.route("/building.png")
+def building_img():
+    return send_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'building.png'))
 
 @app.route("/api/settings", methods=["GET"])
 def get_settings():
@@ -579,6 +598,7 @@ def del_boiler(lid):
     conn = get_db(); conn.execute("DELETE FROM boiler_logs WHERE id=?",(lid,))
     conn.commit(); conn.close(); return jsonify({"ok":True})
 
+
 @app.route("/api/users")
 def list_users():
     conn = get_db()
@@ -593,7 +613,7 @@ def create_user():
     if not uname or len(upass)<4: return jsonify({"error":"账号不能为空，密码至少4位"}), 400
     perms = d.get("permissions", {})
     if role == "superadmin":
-        perms = {"energy":True,"ac_log":True,"boiler_log":True,"users":True,"export":True,"settings":True}
+        perms = {"energy":True,"ac_log":True,"boiler_log":True,"users":True,"export":True,"settings":True,"meters":True}
     conn = get_db()
     try:
         conn.execute("INSERT INTO users(username,password,role,permissions) VALUES(?,?,?,?)",(uname,upass,role,J.dumps(perms)))
@@ -644,7 +664,7 @@ def verify_password():
         except: perms = {}
         # superadmin 拥有全部权限
         if row["role"] == "superadmin":
-            perms = {"energy":True,"ac_log":True,"boiler_log":True,"users":True,"export":True,"settings":True}
+            perms = {"energy":True,"ac_log":True,"boiler_log":True,"users":True,"export":True,"settings":True,"meters":True}
         token = create_session(d.get("username",""), row["role"])
         return jsonify({"ok":True,"role":row["role"],"permissions":perms,"token":token})
     return jsonify({"ok":False,"error":"账号或密码错误"}), 401
@@ -933,7 +953,7 @@ def data_clear():
     import json as _json
     d = request.json or {}
     tables = d.get("tables", [])
-    ALLOWED = {"energy_entries", "ac_logs", "boiler_logs", "daily_notes"}
+    ALLOWED = {"energy_entries", "ac_logs", "boiler_logs", "daily_notes", "meter_readings", "billing_area_readings", "cost_comparison"}
     invalid = [t for t in tables if t not in ALLOWED]
     if invalid:
         return jsonify({"error": f"不允许清空: {invalid}"}), 400

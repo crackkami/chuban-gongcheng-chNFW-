@@ -9,10 +9,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 拷贝应用文件
 COPY app/server.py .
+COPY app/meters.py .
+COPY app/monthly_energy.py .
 COPY app/index.html .
-
-# 创建数据目录
-RUN mkdir -p /data
+COPY app/requirements.txt .
+COPY app/dashboard.db .
 
 # 暴露端口（默认 5000，可通过环境变量覆盖）
 EXPOSE 5000

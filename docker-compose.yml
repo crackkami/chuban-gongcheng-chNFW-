@@ -8,9 +8,9 @@ services:
     ports:
       - "5000:5000"    # 修改左边数字可更换访问端口，例如 "8080:5000"
     volumes:
-      - energy_data:/data
+      - energy_data:/app
     environment:
-      - DB_PATH=/data/dashboard.db
+      - DB_PATH=/app/dashboard.db
       - ADMIN_USERNAME=admin       # 后台登录账号
       - ADMIN_PASSWORD=kami2024    # 后台登录密码（首次部署请修改）
 
