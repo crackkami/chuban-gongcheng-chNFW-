@@ -13,6 +13,7 @@ COPY app/meters.py .
 COPY app/monthly_energy.py .
 COPY app/index.html .
 COPY app/requirements.txt .
+COPY app/building.png .
 #COPY app/dashboard.db .
 RUN mkdir -p /data
 # 暴露端口（默认 5000，可通过环境变量覆盖）
