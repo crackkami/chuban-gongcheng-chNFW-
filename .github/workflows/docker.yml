@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  GHCR_IMAGE: ghcr.io/crackkami/chuban-gongcheng-chNFW-
+  GHCR_IMAGE: ghcr.io/crackkami/chuban-gongcheng
 
 jobs:
   build-and-push:
